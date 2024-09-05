@@ -358,6 +358,7 @@ void bme_read_data(void) {
 
     // Se obtienen los datos de temperatura
     uint8_t forced_temp_addr[] = {0x22, 0x23, 0x24};
+    uint8_t forced_pres_addr[] = {0x1F, 0x20, 0x21};
     for (;;) {
         uint32_t temp_adc = 0;
         bme_forced_mode();
@@ -373,6 +374,17 @@ void bme_read_data(void) {
 
         uint32_t temp = bme_temp_celsius(temp_adc);
         printf("Temperatura: %f\n", (float)temp / 100);
+
+        uint32_t pres_adc = 0;
+        bme_i2c_read(I2C_NUM_0, &forced_pres_addr[0], &tmp, 1);
+        pres_adc = pres_adc | tmp << 12;
+        bme_i2c_read(I2C_NUM_0, &forced_pres_addr[1], &tmp, 1);
+        pres_adc = pres_adc | tmp << 4;
+        bme_i2c_read(I2C_NUM_0, &forced_pres_addr[2], &tmp, 1);
+        pres_adc = pres_adc | (tmp & 0xf0) >> 4;
+
+        uint32_t pres = bme_temp_celsius(pres_adc);
+        printf("Presion: %f\n", (float)pres);
     }
 }
 
