@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <limits.h>
 
 #include "driver/i2c.h"
 #include "driver/uart.h"
@@ -476,6 +477,60 @@ void bme_read_data(void) {
         uint32_t pres = bme_pres_pa(pres_adc);
         printf("Presion: %f\n", (float)pres / 100);
     }
+}
+
+// Función para extraer los 5 mayores números de un arreglo RECORDAR HACER FREE DESPUES DE INVOCAR
+int* extraer_top_5(int arr[], int n) {
+    // Reservar memoria para el arreglo que contendrá los 5 mayores números
+    int* top5 = (int*)malloc(5 * sizeof(int));
+    if (top5 == NULL) {
+        printf("Error al asignar memoria\n");
+        return NULL;
+    }
+
+    // Inicializar el arreglo con los valores mínimos posibles
+    for (int i = 0; i < 5; i++) {
+        top5[i] = INT_MIN;
+    }
+
+    // Recorrer el arreglo original para encontrar los 5 mayores números
+    for (int i = 0; i < n; i++) {
+        int actual = arr[i];
+
+        // Verificar en qué posición colocar el número actual en el arreglo top5
+        for (int j = 0; j < 5; j++) {
+            if (actual > top5[j]) {
+                // Desplazar elementos hacia la derecha para hacer espacio
+                for (int k = 4; k > j; k--) {
+                    top5[k] = top5[k - 1];
+                }
+                // Insertar el número actual
+                top5[j] = actual;
+                break;
+            }
+        }
+    }
+
+    return top5;
+}
+
+// Function that Calculate Root Mean Square
+float rmsValue(int arr[], int n) {
+    int square = 0;
+    float mean = 0.0, root = 0.0;
+ 
+    // Calculate square.
+    for (int i = 0; i < n; i++) {
+        square += pow(arr[i], 2);
+    }
+ 
+    // Calculate Mean.
+    mean = (square / (float)(n));
+ 
+    // Calculate Root.
+    root = sqrt(mean);
+ 
+    return root;
 }
 
 // Lectura/escritura de datos en la NVM
