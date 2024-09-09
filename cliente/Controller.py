@@ -24,11 +24,16 @@ class Controller:
         self.send_message(self.pack_signal(0))
 
     def change_window_size(self, new_window_size):
-        self.send_message(self.pack_signal(1, new_window_size))
+        try:
+            new_window_size = int(new_window_size)
+            self.send_message(self.pack_signal(1, new_window_size))
+        except ValueError:
+            print("Tamano de ventana invalido")
 
     def shutdown(self):
         self.running = False
         self.send_message(self.pack_signal(2))
+        print("La ESP se esta reiniciando...")
 
     def close(self):
         self.ser.close()

@@ -8,10 +8,13 @@
 #include "driver/i2c.h"
 #include "driver/uart.h"
 #include "esp_log.h"
+#include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "math.h"
 #include "sdkconfig.h"
+#include "nvs_flash.h"
+#include "nvs.h"
 
 #define CONCAT_BYTES(msb, lsb) (((uint16_t)msb << 8) | (uint16_t)lsb)
 
@@ -32,6 +35,8 @@
 #define EXAMPLE_I2C_ACK_CHECK_DIS 0x0
 #define ACK_VAL 0x0
 #define NACK_VAL 0x1
+
+#define REDIRECT_LOGS 1 // if redirect ESP log to another UART
 
 esp_err_t ret = ESP_OK;
 esp_err_t ret2 = ESP_OK;
@@ -487,7 +492,7 @@ void init_nvs() {
 }
 
 void write_window_nvs(int window) {
-    nvs_hande_t my_handle;
+    nvs_handle_t my_handle;
     esp_err_t err = nvs_open("storage", NVS_READWRITE, &my_handle);
     if (err != ESP_OK) {
         printf("Error (%s) abriendo el NVS handler!\n", esp_err_to_name(err));
@@ -496,13 +501,16 @@ void write_window_nvs(int window) {
         // Escribir el valor de la ventana
         err = nvs_set_i32(my_handle, "window", window);
         printf((err != ESP_OK) ? "Fallo!\n" : "Hecho! Ventana guardada\n");
+        // Commit written value.
+        err = nvs_commit(my_handle);
+        printf((err != ESP_OK) ? "Fallo!\n" : "Hecho! Cambios guardados\n");
         // Cerrar la NVS
         nvs_close(my_handle);
     }
 }
 
 int read_window_nvs() {
-    nvs_hande_t my_handle;
+    nvs_handle_t my_handle;
     esp_err_t err = nvs_open("storage", NVS_READONLY, &my_handle);
     int32_t window = 0;  // Valor por defecto
     if (err != ESP_OK) {
@@ -513,7 +521,7 @@ int read_window_nvs() {
         err = nvs_get_i32(my_handle, "window", &window);
         switch (err) {
             case ESP_OK:
-                printf("Ventana almacenada: %d\n", window);
+                printf("Ventana almacenada: %ld\n", window);
                 break;
             case ESP_ERR_NVS_NOT_FOUND:
                 printf("La ventana no ha sido guardada todavia!\n");
@@ -559,17 +567,31 @@ static void uart_setup() {
 
 // Read UART_num for input with timeout of 1 sec
 int serial_read(char *buffer, int size) {
-    int buffer_size int len = uart_read_bytes(UART_NUM, (uint8_t *)buffer, size, pdMS_TO_TICKS(1000));
+    int len = uart_read_bytes(UART_NUM, (uint8_t *)buffer, size, pdMS_TO_TICKS(1000));
     return len;
 }
 
+// Write message through UART_num with an \0 at the end
+int serial_write(const char *msg, int len) {
+    char *send_with_end = (char *)malloc(sizeof(char) * (len + 1));
+    memcpy(send_with_end, msg, len);
+    send_with_end[len] = '\0';
+
+    int result = uart_write_bytes(UART_NUM, send_with_end, len + 1);
+
+    free(send_with_end);
+
+    vTaskDelay(pdMS_TO_TICKS(1000));  // Delay for 1 second
+    return result;
+}
+
 // CAMBIAR PARA QUE CONCUERDE CON PYTHON
-void command_handler(uint8_t signal_type, uint32_t body) {
+void command_handler(uint8_t signal_type, int32_t body) {
     switch (signal_type) {
         case 0:
             // Extraer la ventana
-            int window = read_window_nvs();
-            printf("Ventana actual: %d\n", window);
+            int32_t window = read_window_nvs();
+            printf("Ventana actual: %ld\n", window);
             // Enviar ventana
             break;
         case 1:
@@ -579,7 +601,7 @@ void command_handler(uint8_t signal_type, uint32_t body) {
                 break;
             }
             write_window_nvs(body);
-            printf("Ventana cambiada a: %d\n", body);
+            printf("Ventana cambiada a: %ld\n", body);
             break;
         case 2:
             printf("Cerrando comunicación\n");
@@ -594,19 +616,20 @@ void command_handler(uint8_t signal_type, uint32_t body) {
 void app_main(void) {
     uart_setup();    // Uart setup
     srand(time(0));  // Initialize random seed
+    init_nvs();      // Inicializar NVS
     ESP_ERROR_CHECK(sensor_init());
-    bme_softreset();
+    bme_softreset(); // Soft reset
 
-    char signal_buffer[5] = {'0'};
+    char signal_buffer[5];
     while (true) {
         // Espera señal
-        if (serial_read(&signal_buffer, 5) == 0) {
+        if (serial_read(signal_buffer, 5) == 0) {
             continue;
         }
         // Reacciona al tipo de señal
         uint8_t signal_type = signal_buffer[0];
 
-        uint32_t *signal_body = &signal_buffer[1];
-        command_handler(signal_buffer, &signal_body);
+        int32_t signal_body = signal_buffer[1];
+        command_handler(signal_buffer, signal_body);
     }
 }
