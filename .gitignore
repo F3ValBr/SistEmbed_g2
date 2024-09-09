@@ -216,3 +216,4 @@ cython_debug/
 
 comunicacion_serial/
 bme688/
+.vscode/
