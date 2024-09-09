@@ -509,7 +509,7 @@ void write_window_nvs(int window) {
     }
 }
 
-int read_window_nvs() {
+int32_t read_window_nvs() {
     nvs_handle_t my_handle;
     esp_err_t err = nvs_open("storage", NVS_READONLY, &my_handle);
     int32_t window = 0;  // Valor por defecto
