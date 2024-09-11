@@ -549,6 +549,9 @@ float **extraer_top_5(bme_data reads[], size_t n) {
                     top5[1][k] = top5[1][k - 1];
                 }
                 top5[1][j] = curr_pres;
+        top5[1][i] = -FLT_MAX;
+    }
+
                 break;
             }
         }
@@ -637,7 +640,7 @@ void write_window_nvs(int window) {
 int32_t read_window_nvs() {
     nvs_handle_t my_handle;
     esp_err_t err = nvs_open("storage", NVS_READONLY, &my_handle);
-    int32_t window = 0;  // Valor por defecto
+    int32_t window = 20;  // Valor por defecto
     if (err != ESP_OK) {
         printf("Error (%s) abriendo el NVS handler!\n", esp_err_to_name(err));
     } else {
