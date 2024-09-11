@@ -714,20 +714,73 @@ int serial_write(const char *msg, int len) {
 }
 
 // CAMBIAR PARA QUE CONCUERDE CON PYTHON
-void command_handler(uint8_t signal_type, int32_t body) {
+void command_handler(uint8_t signal_type, uint32_t body) {
     switch (signal_type) {
         case 0:
             // Extraer la ventana
             int32_t window = read_window_nvs();
             printf("Ventana actual: %ld\n", window);
-            // Enviar ventana
-            break;
-        case 1:
-            // Cambiar la ventana
-            if (body < 0 || body > 100) {
-                printf("Valor de ventana no permitido\n");
+            // Enviar ventana y calcular datos
+            size_t n_reads;
+            bme_data *data = bme_read_data(window, &n_reads);
+            if (data == NULL) {
+                printf("Error al leer datos\n");
                 break;
             }
+
+            // Extraer los 5 mayores valores
+            float **top5 = extraer_top_5(data, n_reads);
+            if (top5 == NULL) {
+                printf("Error al extraer los 5 mayores valores\n");
+                free(data);
+                break;
+            }
+            printf("Top 5 Temperaturas: ");
+            for (int i = 0; i < 5; i++) {
+                printf("%f ", top5[0][i]);
+            }
+            printf("\n");
+            printf("Top 5 Presiones: ");
+            for (int i = 0; i < 5; i++) {
+                printf("%f ", top5[1][i]);
+            }
+            printf("\n");
+            // Calcular el RMS
+            float rms_temp = 0.0, rms_pres = 0.0;
+            calcular_rms(data, n_reads, &rms_temp, &rms_pres);
+            printf("RMS Temperatura: %f\n", rms_temp);
+            printf("RMS Presion: %f\n", rms_pres);
+
+            // Enviar los datos al controlador
+            // AQUI EL PROCESO PARA MANDAR DATOS
+
+            // tamano ventana
+            uart_write_bytes(UART_NUM, (const char *)window, sizeof(int32_t));
+            vTaskDelay(pdMS_TO_TICKS(50));
+
+            // ventana
+            uart_write_bytes(UART_NUM, (const char *)data, sizeof(bme_data));
+            vTaskDelay(pdMS_TO_TICKS(50));
+
+            // top 5 y RMS
+            float pkg[12];
+            for (int i = 0; i < 5;) {
+                pkg[i] = top5[0][i];
+                pkg[i + 5] = top5[1][i];
+            }
+            pkg[10] = rms_temp;
+            pkg[11] = rms_pres;
+            uart_write_bytes(UART_NUM, (const char *)pkg, sizeof(float) * 12);
+            vTaskDelay(pdMS_TO_TICKS(50));
+            // serial_write((const char *)pkg, sizeof(float) * 12);
+
+            // Liberar memoria
+            free(data);
+            free(top5[0]);
+            free(top5[1]);
+            free(top5);
+            break;
+        case 1:
             write_window_nvs(body);
             printf("Ventana cambiada a: %ld\n", body);
             break;
