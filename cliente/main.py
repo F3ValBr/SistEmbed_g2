@@ -36,10 +36,10 @@ def main():
         print('Press 1 to change window size')
         print('Press 2 to end communication')
         user_input = input('Enter your choice: ')
+
         if user_input == '0':
             controller.request_window()
-            # TODO: Leer datos enviados.
-            # TODO: visualize data
+            controller.get_window()
         elif user_input == '1':
             new_window_size = input('Enter new window size: ')
             controller.change_window_size(new_window_size)
