@@ -502,33 +502,53 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
     return readings;
 }
 
-// Función para extraer los 5 mayores números de un arreglo RECORDAR HACER FREE DESPUES DE INVOCAR
-int* extraer_top_5(int arr[], int n) {
+// Función para extraer los 5 mayores números por presion y temperatura
+float **extraer_top_5(bme_data reads[], size_t n) {
     // Reservar memoria para el arreglo que contendrá los 5 mayores números
-    int* top5 = (int*)malloc(5 * sizeof(int));
+    float **top5 = (float **)malloc(2 * sizeof(float *));
     if (top5 == NULL) {
         printf("Error al asignar memoria\n");
         return NULL;
     }
 
-    // Inicializar el arreglo con los valores mínimos posibles
-    for (int i = 0; i < 5; i++) {
-        top5[i] = INT_MIN;
+    top5[0] = (float *)malloc(5 * sizeof(float));  // Temperatura
+    top5[1] = (float *)malloc(5 * sizeof(float));  // Presion
+
+    if (top5[0] == NULL || top5[1] == NULL) {
+        printf("Error al asignar memoria\n");
+        free(top5[0]);
+        free(top5[1]);
+        free(top5);
+        return NULL;
     }
 
-    // Recorrer el arreglo original para encontrar los 5 mayores números
-    for (int i = 0; i < n; i++) {
-        int actual = arr[i];
+    // Inicializar los arreglos
+    for (int i = 0; i < 5; i++) {
+        top5[0][i] = -FLT_MAX;
+        top5[1][i] = -FLT_MAX;
+    }
 
-        // Verificar en qué posición colocar el número actual en el arreglo top5
+    // Extraer los 5 mayores números
+    for (size_t i = 0; i < n; i++) {
+        float curr_pres = (float)reads[i].presure;
+        float curr_temp = (float)reads[i].temperature;
+
         for (int j = 0; j < 5; j++) {
-            if (actual > top5[j]) {
-                // Desplazar elementos hacia la derecha para hacer espacio
+            if (curr_temp > top5[0][j]) {
                 for (int k = 4; k > j; k--) {
-                    top5[k] = top5[k - 1];
+                    top5[0][k] = top5[0][k - 1];
                 }
-                // Insertar el número actual
-                top5[j] = actual;
+                top5[0][j] = curr_temp;
+                break;
+            }
+        }
+
+        for (int j = 0; j < 5; j++) {
+            if (curr_pres > top5[1][j]) {
+                for (int k = 4; k > j; k--) {
+                    top5[1][k] = top5[1][k - 1];
+                }
+                top5[1][j] = curr_pres;
                 break;
             }
         }
@@ -541,19 +561,46 @@ int* extraer_top_5(int arr[], int n) {
 float rmsValue(int arr[], int n) {
     int square = 0;
     float mean = 0.0, root = 0.0;
- 
+
     // Calculate square.
     for (int i = 0; i < n; i++) {
         square += pow(arr[i], 2);
     }
- 
+
     // Calculate Mean.
     mean = (square / (float)(n));
- 
+
     // Calculate Root.
     root = sqrt(mean);
- 
+
     return root;
+}
+
+void calcular_rms(bme_data readings[], size_t n, float *rms_temp, float *rms_pres) {
+    // Crear arreglos temporales para las temperaturas y presiones
+    int *temperaturas = (int *)malloc(n * sizeof(int));
+    int *presiones = (int *)malloc(n * sizeof(int));
+
+    if (temperaturas == NULL || presiones == NULL) {
+        printf("Error al asignar memoria para los cálculos RMS\n");
+        free(temperaturas);
+        free(presiones);
+        return;
+    }
+
+    // Llenar los arreglos con los datos de temperatura y presión
+    for (size_t i = 0; i < n; i++) {
+        temperaturas[i] = readings[i].temperature;
+        presiones[i] = readings[i].presure;
+    }
+
+    // Calcular el RMS para temperatura y presión
+    *rms_temp = rmsValue(temperaturas, n);
+    *rms_pres = rmsValue(presiones, n);
+
+    // Liberar memoria de los arreglos temporales
+    free(temperaturas);
+    free(presiones);
 }
 
 // Lectura/escritura de datos en la NVM
