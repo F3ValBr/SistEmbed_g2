@@ -27,7 +27,8 @@ class Controller:
         try:
             new_window_size = int(new_window_size)
             self.send_message(self.pack_signal(1, new_window_size))
-            print(f"El tamaño de la ventana se ha cambiado a {new_window_size}")
+            print(
+                f"El tamaño de la ventana se ha cambiado a {new_window_size}")
         except ValueError:
             print("Tamano de ventana invalido")
 
@@ -44,4 +45,4 @@ class Controller:
             if signal_type == 1:
                 raise MissingWindowSizeError()
             return signal_type.to_bytes(1, 'little')
-        return signal_type.to_bytes(1, 'little') + body.to_bytes(4, "little")
+        return signal_type.to_bytes(1, 'little') + body.to_bytes(4, 'little')
