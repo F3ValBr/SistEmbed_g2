@@ -27,6 +27,7 @@ class Controller:
 
     def request_window(self):
         self.send_message(self.pack_signal(0))
+        self.window_data = []
 
     def get_window(self):
         while len(self.window_data) < self.window_size:
