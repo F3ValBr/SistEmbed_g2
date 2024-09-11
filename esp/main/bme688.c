@@ -425,7 +425,7 @@ int bme_pres_pa(uint32_t pres_adc) {
     var1 = ((int32_t)par_p9 * (int32_t)(((calc_pres >> 3) * (calc_pres >> 3)) >> 13)) >> 12;
     var2 = ((int32_t)(calc_pres >> 2) * (int32_t)par_p8) >> 13;
     var3 = ((int32_t)(calc_pres >> 8) * (int32_t)(calc_pres >> 8) * (int32_t)(calc_pres >> 8) * (int32_t)par_p10) >> 17;
-    calc_pres = (int32_t)(calc_pres) + ((var1 + var2 + var3 + ((int32_t)1 << 2)) >> 4);
+    calc_pres = (int32_t)(calc_pres) + ((var1 + var2 + var3 + ((int32_t)par_p7 << 7)) >> 4);
     return calc_pres;
 }
 
