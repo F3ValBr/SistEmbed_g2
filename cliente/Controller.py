@@ -55,6 +55,7 @@ class Controller:
         try:
             new_window_size = int(new_window_size)
             self.send_message(self.pack_signal(1, new_window_size))
+            self.window_size = new_window_size
             print(
                 f"El tamaño de la ventana se ha cambiado a {new_window_size}")
         except ValueError:
