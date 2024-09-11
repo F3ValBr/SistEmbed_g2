@@ -810,7 +810,7 @@ void app_main(void) {
         // Reacciona al tipo de señal
         uint8_t signal_type = signal_buffer[0];
 
-        int32_t signal_body = signal_buffer[1];
-        command_handler(signal_buffer, signal_body);
+        uint32_t *signal_body = &signal_buffer[1];
+        command_handler(signal_type, *signal_body);
     }
 }
