@@ -1,4 +1,5 @@
 from struct import pack, unpack
+from serial import Serial
 
 
 class MissingWindowSizeError(Exception):
@@ -15,7 +16,7 @@ class Controller:
 
     def __init__(self, serial_port=None):
         self.window_size = 10
-        self.ser = serial_port
+        self.ser: Serial = serial_port
 
     def receive_response(self):
         response = self.ser.readline()
