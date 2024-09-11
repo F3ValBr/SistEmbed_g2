@@ -799,7 +799,11 @@ void app_main(void) {
     srand(time(0));  // Initialize random seed
     init_nvs();      // Inicializar NVS
     ESP_ERROR_CHECK(sensor_init());
-    bme_softreset(); // Soft reset
+    bme_get_chipid();
+    bme_softreset();
+    bme_get_mode();
+    bme_forced_mode();
+    // bme_softreset();  // Soft reset
 
     char signal_buffer[5];
     while (true) {
