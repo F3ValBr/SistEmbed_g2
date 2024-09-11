@@ -2,7 +2,7 @@ from Controller import Controller
 import serial
 
 
-PORT = "/dev/algo"
+PORT = '/dev/ttyUSB0'
 BAUD_RATE = 115200
 
 """
