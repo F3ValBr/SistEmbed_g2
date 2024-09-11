@@ -440,6 +440,12 @@ void bme_get_mode(void) {
     printf("Valor de BME MODE: %2X \n\n", tmp);
 }
 
+// bme_data es una estructura que contiene la temperatura y la presion en un instante de tiempo
+typedef struct bme_data {
+    int temperature;
+    int presure;
+} bme_data;
+
 void bme_read_data(void) {
     // Datasheet[23:41]
     // https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme688-ds000.pdf#page=23
