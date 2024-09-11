@@ -446,16 +446,24 @@ typedef struct bme_data {
     int presure;
 } bme_data;
 
-void bme_read_data(void) {
+bme_data *bme_read_data(int window_s, size_t *n_reads) {
     // Datasheet[23:41]
     // https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme688-ds000.pdf#page=23
 
     uint8_t tmp;
+    *n_reads = 0;
 
     // Se obtienen los datos de temperatura
     uint8_t forced_temp_addr[] = {0x22, 0x23, 0x24};
     uint8_t forced_pres_addr[] = {0x1F, 0x20, 0x21};
-    for (;;) {
+
+    bme_data *readings = malloc(window_s * sizeof(bme_data));
+    if (readings == NULL) {
+        printf("Error al asignar memoria\n");
+        return NULL;
+    }
+
+    while (*n_reads < window_s) {
         uint32_t temp_adc = 0;
         bme_forced_mode();
         // Datasheet[41]
@@ -482,7 +490,16 @@ void bme_read_data(void) {
 
         uint32_t pres = bme_pres_pa(pres_adc);
         printf("Presion: %f\n", (float)pres / 100);
+
+        bme_data data;
+        data.temperature = temp;
+        data.presure = pres;
+
+        readings[*n_reads] = data;
+        (*n_reads)++;
     }
+
+    return readings;
 }
 
 // Función para extraer los 5 mayores números de un arreglo RECORDAR HACER FREE DESPUES DE INVOCAR
