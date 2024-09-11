@@ -307,6 +307,8 @@ int bme_check_forced_mode(void) {
     return (tmp == 0b001 && tmp2 == 0x59 && tmp3 == 0x00 && tmp4 == 0b100000 && tmp5 == 0b01010101);
 }
 
+int t_fine;
+
 int bme_temp_celsius(uint32_t temp_adc) {
     // Datasheet[23]
     // https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme688-ds000.pdf#page=23
@@ -333,7 +335,6 @@ int bme_temp_celsius(uint32_t temp_adc) {
     int64_t var1;
     int64_t var2;
     int64_t var3;
-    int t_fine;
     int calc_temp;
 
     var1 = ((int32_t)temp_adc >> 3) - ((int32_t)par_t1 << 1);
@@ -404,7 +405,6 @@ int bme_pres_pa(uint32_t pres_adc) {
     int64_t var1;
     int64_t var2;
     int64_t var3;
-    int t_fine;
     int calc_pres;
 
     // Esto es copiado y pegado de la documentacion
