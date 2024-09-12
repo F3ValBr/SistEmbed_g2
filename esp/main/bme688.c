@@ -6,15 +6,15 @@
 #include <string.h>
 #include <time.h>
 
-#include "bme.h"
 #include "driver/i2c.h"
 #include "driver/uart.h"
+#include "embebidos/bme.h"
+#include "embebidos/nvs_embebidos.h"
 #include "esp_log.h"
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "math.h"
-#include "nvs_embebidos.h"
 #include "sdkconfig.h"
 
 #define CONCAT_BYTES(msb, lsb) (((uint16_t)msb << 8) | (uint16_t)lsb)

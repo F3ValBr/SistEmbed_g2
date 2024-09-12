@@ -1,4 +1,4 @@
-#include "nvs_embebidos.h"
+#include "embebidos/nvs_embebidos.h"
 
 #include "nvs.h"
 #include "nvs_flash.h"
