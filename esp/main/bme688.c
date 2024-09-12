@@ -37,7 +37,7 @@
 #define ACK_VAL 0x0
 #define NACK_VAL 0x1
 
-#define REDIRECT_LOGS 1 // if redirect ESP log to another UART
+#define REDIRECT_LOGS 1  // if redirect ESP log to another UART
 
 esp_err_t ret = ESP_OK;
 esp_err_t ret2 = ESP_OK;
@@ -348,7 +348,7 @@ int bme_temp_celsius(uint32_t temp_adc) {
 
 int bme_pres_pa(uint32_t pres_adc) {
     // Datasheet[23]
-    // https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme688-ds000.pdf#page=23
+    // https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme688 var2 = (var2 / 4.0f) + (((float)dev->calib.par_p4) * 65536.0f);-ds000.pdf#page=23
 
     // Se obtienen los parametros de calibracion
     uint8_t addr_par_p1_lsb = 0x8E, addr_par_p1_msb = 0x8F;
@@ -442,8 +442,8 @@ void bme_get_mode(void) {
 
 // bme_data es una estructura que contiene la temperatura y la presion en un instante de tiempo
 typedef struct bme_data {
-    int temperature;
-    int presure;
+    float temperature;
+    float presure;
 } bme_data;
 
 bme_data *bme_read_data(int window_s, size_t *n_reads) {
@@ -477,7 +477,7 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
         temp_adc = temp_adc | (tmp & 0xf0) >> 4;
 
         uint32_t temp = bme_temp_celsius(temp_adc);
-        printf("Temperatura: %f\n", (float)temp / 100);
+        printf("Temperatura: %f\n", (float)temp);
 
         // Se obtienen los datos de presion
         uint32_t pres_adc = 0;
@@ -492,8 +492,8 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
         printf("Presion: %f\n", (float)pres / 100);
 
         bme_data data;
-        data.temperature = temp;
-        data.presure = pres;
+        data.temperature = (float)temp / 100;
+        data.presure = (float)pres / 100;
 
         readings[*n_reads] = data;
         (*n_reads)++;
@@ -549,9 +549,6 @@ float **extraer_top_5(bme_data reads[], size_t n) {
                     top5[1][k] = top5[1][k - 1];
                 }
                 top5[1][j] = curr_pres;
-        top5[1][i] = -FLT_MAX;
-    }
-
                 break;
             }
         }
@@ -700,7 +697,7 @@ int serial_read(char *buffer, int size) {
 }
 
 // Write message through UART_num with an \0 at the end
-int serial_write(const char *msg, int len) {
+int serial_write_0(const char *msg, int len) {
     char *send_with_end = (char *)malloc(sizeof(char) * (len + 1));
     memcpy(send_with_end, msg, len);
     send_with_end[len] = '\0';
@@ -713,12 +710,20 @@ int serial_write(const char *msg, int len) {
     return result;
 }
 
+int HAS_SENT_WINDOW_YET = 0;
+
 // CAMBIAR PARA QUE CONCUERDE CON PYTHON
 void command_handler(uint8_t signal_type, uint32_t body) {
     switch (signal_type) {
         case 0:
-            // Extraer la ventana
             int32_t window = read_window_nvs();
+            // printf("%li\n", window);
+            // if (!HAS_SENT_WINDOW_YET) {
+            //     HAS_SENT_WINDOW_YET = 1;
+            //     serial_write_0((const char *)window, sizeof(int32_t));
+            //     // uart_write_bytes(UART_NUM, (const char *)window, sizeof(int32_t));
+            // }
+            // Extraer la ventana
             printf("Ventana actual: %ld\n", window);
             // Enviar ventana y calcular datos
             size_t n_reads;
@@ -755,24 +760,25 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             // AQUI EL PROCESO PARA MANDAR DATOS
 
             // tamano ventana
-            uart_write_bytes(UART_NUM, (const char *)window, sizeof(int32_t));
-            vTaskDelay(pdMS_TO_TICKS(50));
+            // uart_write_bytes(UART_NUM, (const char *)window, sizeof(int32_t));
+            // vTaskDelay(pdMS_TO_TICKS(50));
 
             // ventana
-            uart_write_bytes(UART_NUM, (const char *)data, sizeof(bme_data));
-            vTaskDelay(pdMS_TO_TICKS(50));
+            serial_write_0((const char *)data, sizeof(bme_data) * window);
+            // uart_write_bytes(UART_NUM, (const char *)data, sizeof(bme_data));
+            // vTaskDelay(pdMS_TO_TICKS(50));
 
-            // top 5 y RMS
-            float pkg[12];
-            for (int i = 0; i < 5;) {
-                pkg[i] = top5[0][i];
-                pkg[i + 5] = top5[1][i];
-            }
-            pkg[10] = rms_temp;
-            pkg[11] = rms_pres;
-            uart_write_bytes(UART_NUM, (const char *)pkg, sizeof(float) * 12);
-            vTaskDelay(pdMS_TO_TICKS(50));
-            // serial_write((const char *)pkg, sizeof(float) * 12);
+            // // top 5 y RMS
+            // float pkg[12];
+            // for (int i = 0; i < 5;) {
+            //     pkg[i] = top5[0][i];
+            //     pkg[i + 5] = top5[1][i];
+            // }
+            // pkg[10] = rms_temp;
+            // pkg[11] = rms_pres;
+            // // uart_write_bytes(UART_NUM, (const char *)pkg, sizeof(float) * 12);
+            // // vTaskDelay(pdMS_TO_TICKS(50));
+            // serial_write_0((const char *)pkg, sizeof(float) * 12);
 
             // Liberar memoria
             free(data);
@@ -806,15 +812,21 @@ void app_main(void) {
     // bme_softreset();  // Soft reset
 
     char signal_buffer[5];
+
     while (true) {
         // Espera señal
         if (serial_read(signal_buffer, 5) == 0) {
+            // printf("esperando señal");
             continue;
         }
         // Reacciona al tipo de señal
         uint8_t signal_type = signal_buffer[0];
 
         uint32_t *signal_body = &signal_buffer[1];
+        printf("antes de cmd handler");
         command_handler(signal_type, *signal_body);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        printf("fuera de cmd handler");
+        fflush(stdout);
     }
 }

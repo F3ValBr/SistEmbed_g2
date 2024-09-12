@@ -4,7 +4,6 @@ import serial
 
 PORT = '/dev/ttyUSB0'
 BAUD_RATE = 115200
-
 """
 def main():
     print("Opciones:")
@@ -30,6 +29,7 @@ def main():
 def main():
     serial_port = serial.Serial(PORT, BAUD_RATE, timeout=1)
     controller = Controller(serial_port)
+    # TODO: obtener tamaño de ventana almacenado en ESP.
     while True:
         # Recibe instrucción del usuario.
         print('Press 0 to receive data')
