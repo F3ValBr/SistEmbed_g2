@@ -36,7 +36,6 @@ class Controller:
 
     def receive_bme_data(self):
         data = self.ser.read(12)
-        print(f"len data {len(data)}")
         data = unpack('fff', data)
         return data
     
@@ -96,45 +95,9 @@ class Controller:
                         print("Medidas obtenidas")
                         break
 
-        print(self.window_data)
-        
-            # TODO: Actualizar visualización
+        # print(self.window_data)
 
-        # TODO: visualize data
-
-    def get_window_2(self):
-        while self.ser.in_waiting < 4:
-            pass
-        window_size = int.from_bytes(self.ser.read(4), 'little')
-        tmp_data = []
-        tmp_temp_top = []
-        tmp_pres_top = []
-        tmp_temp_rms = 0
-        tmp_pres_rms = 0
-
-        for _ in range(window_size):
-            while self.ser.in_waiting < 8:
-                pass
-            new_temp = unpack('f', self.ser.read(4))[0]
-            new_pres = unpack('f', self.ser.read(4))[0]
-            tmp_data.append((new_temp, new_pres))
-
-        while self.ser.in_waiting < 12 * 4:
-            pass
-
-        values = unpack('<5f5fff', self.ser.read(12 * 4))
-        tmp_temp_top = list(values[0:5])
-        tmp_pres_top = list(values[5:10])
-        tmp_temp_rms = values[10]
-        tmp_pres_rms = values[11]
-
-        self.window_data = tmp_data
-        self.temp_top = tmp_temp_top
-        self.pres_top = tmp_pres_top
-        self.temp_rms = tmp_temp_rms
-        self.pres_rms = tmp_pres_rms
-
-        # TODO: visualize data
+        self.plot_window()
 
     def change_window_size(self, new_window_size):
         try:
@@ -160,3 +123,58 @@ class Controller:
                 raise MissingWindowSizeError()
             return signal_type.to_bytes(1, 'little')
         return signal_type.to_bytes(1, 'little') + body.to_bytes(4, 'little')
+
+    def plot_window(self):
+        data_bme = self.window_data[0:self.window_size]
+        data_measurements = self.window_data[-1]
+        self.temp_top = data_measurements[0:5]
+        self.pres_top = data_measurements[5:10]
+        self.temp_rms = data_measurements[10]
+        self.pres_rms = data_measurements[11]
+        
+        data_array = np.array(data_bme)
+        data_temp = data_array[:,0]
+        data_pres = data_array[:,1]
+
+        temp_points = []
+        pres_points = []
+
+        for i in range(5):
+            temp_idx = np.where(data_temp == self.temp_top[i])
+            temp_points.append((temp_idx, self.temp_top[i]))
+            
+            pres_idx = np.where(data_pres == self.pres_top[i])
+
+            pres_points.append((pres_idx, self.pres_top[i]))
+
+            
+
+
+        fig, axs = plt.subplots(1, 2)
+
+        fig.suptitle(f"Temperatura y Presion (ventana: {self.window_size}")
+
+        axs[0].plot(data_temp)
+        axs[0].set_title(f"Temperatura (RMS = {self.temp_rms})")
+        axs[0].set_ylabel("Grados Celsius (°C)")
+        axs[0].set_ylim(0, 50)
+
+        for value in temp_points:
+            axs[0].plot(value[0], value[1], 'ro')
+
+
+        axs[1].plot(data_pres)
+        axs[1].set_title(f"Presion (RMS = {self.pres_rms})")
+        axs[1].set_ylabel("Pascales (Pa)")
+        axs[1].set_ylim(1000, 1400)
+
+        for value in pres_points:
+            axs[1].plot(value[0], value[1], 'ro')
+
+        
+        plt.show()
+
+
+
+
+

@@ -4,32 +4,11 @@ import serial
 
 PORT = '/dev/cu.usbserial-110'
 BAUD_RATE = 115200
-"""
-def main():
-    print("Opciones:")
-    print("0. Solicitar una ventana de datos")
-    print("1. Cambiar tamaño de ventana")
-    print("2. Cerrar la conexión")
-    option = input("Elige una opción: ")
-
-    if option == '1':
-        #   algo
-        pass
-    elif option == '2':
-        n_ventana = int(input("Ingrese el valor de la nueva ventana: "))
-
-    elif option == '3':
-        print("Cerrando la conexión...")
-    else:
-        print("Opción no válida.")
-        main()
-"""
-
 
 def main():
     serial_port = serial.Serial(PORT, BAUD_RATE, timeout=1)
     controller = Controller(serial_port)
-    # TODO: obtener tamaño de ventana almacenado en ESP.
+
     while True:
         # Recibe instrucción del usuario.
         print('Press 0 to receive data')

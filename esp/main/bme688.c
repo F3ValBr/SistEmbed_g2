@@ -248,13 +248,6 @@ void command_handler(uint8_t signal_type, uint32_t body) {
     switch (signal_type) {
         case 0:
             int32_t window = read_window_nvs();
-            // printf("%li\n", window);
-            // if (!HAS_SENT_WINDOW_YET) {
-            //     HAS_SENT_WINDOW_YET = 1;
-            //     serial_write_0((const char *)window, sizeof(int32_t));
-            //     // uart_write_bytes(UART_NUM, (const char *)window, sizeof(int32_t));
-            // }
-            // Extraer la ventana
             //printf("Ventana actual: %ld\n", window);
             // Enviar ventana y calcular datos
             size_t n_reads;
@@ -288,29 +281,7 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             //printf("RMS Presion: %f\n", rms_pres);
 
             // Enviar los datos al controlador
-            // AQUI EL PROCESO PARA MANDAR DATOS
             bme_data_sender(data, top5, rms_temp, rms_pres, window);
-            
-            // tamano ventana
-            // uart_write_bytes(UART_NUM, (const char *)window, sizeof(int32_t));
-            // vTaskDelay(pdMS_TO_TICKS(50));
-
-            // ventana
-            //serial_write_0((const char *)data, sizeof(bme_data) * window);
-            // uart_write_bytes(UART_NUM, (const char *)data, sizeof(bme_data));
-            // vTaskDelay(pdMS_TO_TICKS(50));
-
-            // // top 5 y RMS
-            // float pkg[12];
-            // for (int i = 0; i < 5;) {
-            //     pkg[i] = top5[0][i];
-            //     pkg[i + 5] = top5[1][i];
-            // }
-            // pkg[10] = rms_temp;
-            // pkg[11] = rms_pres;
-            // // uart_write_bytes(UART_NUM, (const char *)pkg, sizeof(float) * 12);
-            // // vTaskDelay(pdMS_TO_TICKS(50));
-            // serial_write_0((const char *)pkg, sizeof(float) * 12);
 
             // Liberar memoria
             free(data);
@@ -341,7 +312,6 @@ void app_main(void) {
     bme_softreset();
     bme_get_mode();
     bme_forced_mode();
-    // bme_softreset();  // Soft reset
 
     char signal_buffer[5];
 
