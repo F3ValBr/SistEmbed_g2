@@ -1,6 +1,8 @@
-from struct import unpack
+from struct import unpack, pack
 from serial import Serial
 from time import sleep
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 class MissingWindowSizeError(Exception):
@@ -9,6 +11,7 @@ class MissingWindowSizeError(Exception):
 
 class Controller:
     running = True
+    first_execution = True
     window_data = []
     temp_top = None
     pres_top = None
@@ -31,32 +34,70 @@ class Controller:
         self.send_message(self.pack_signal(0))
         self.window_data = []
 
+    def receive_bme_data(self):
+        data = self.ser.read(12)
+        print(f"len data {len(data)}")
+        data = unpack('fff', data)
+        return data
+    
+    def receive_measures(self):
+        data = self.ser.read(48)
+        data = unpack("5f5fff", data)
+        return data
+
     def get_window(self):
-        # while self.ser.in_waiting < 4:
-        #     pass
-        # (self.window_size) = unpack('i', self.ser.read(4))
-        # print(self.window_size)
-        while len(self.window_data) < self.window_size:
-            waiting = self.ser.in_waiting
-            if waiting >= 8:
-                sleep(1)
-                new_buffer = self.ser.read(9)[:-1]
-                # new_buffer = self.ser.readline()
-                print(len(new_buffer))
-                self.window_data.append(unpack('ff', new_buffer))
-                print(self.window_size)
-        # waiting = self.ser.in_waiting
-        # tail_data_size = 48
-        # if waiting >= tail_data_size:  # 12 floats * 4 bytes
-        #     new_buffer = self.ser.read(tail_data_size)
-        #     print(new_buffer)
-        #     values = unpack('<5f5fff', new_buffer)
-        #     (self.temp_top, self.pres_top, self.temp_rms,
-        #      self.pres_rms) = (
-        #          list(values[0:5]),
-        #          list(values[5:10]),
-        #          values[10],
-        #          values[11])
+        print("Solicitando datos...")
+        sleep(10)
+
+        print("Recibiendo datos...")
+        message = pack('6s','BEGIN\0'.encode())
+        self.send_message(message)
+
+        counter = 0
+        while True:
+            if self.ser.in_waiting > 11:
+                try:
+                    obt_data = self.receive_bme_data()
+                    print(obt_data)
+                    self.window_data.append(obt_data)
+                    if self.first_execution and len(self.window_data) == 1:
+                        self.window_size = int(obt_data[2])
+                        self.first_execution = False
+                except Exception as e:
+                    print(e)
+                    continue
+                else:
+                    counter += 1
+                    print(f"Contador data: {counter}")
+                finally:
+                    if counter == self.window_size:
+                        print("Lecturas obtenidas")
+                        break
+        print("Datos obtenidos")
+        print(self.window_data)
+        sleep(1)
+        print("Obteniendo medidas adicionales...")
+        counter_measures = 0
+        
+        while True:
+            if self.ser.in_waiting > 47:
+                try:
+                    m_data = self.receive_measures()
+                    print(m_data)
+                    self.window_data.append(m_data)
+                except Exception as e:
+                    print(e)
+                    continue
+                else:
+                    counter_measures += 1
+                    print(f"Contador data: {counter_measures}")
+                finally:
+                    if counter_measures == 1:
+                        print("Medidas obtenidas")
+                        break
+
+        print(self.window_data)
+        
             # TODO: Actualizar visualización
 
         # TODO: visualize data

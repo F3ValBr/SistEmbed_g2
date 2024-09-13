@@ -474,7 +474,7 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
 
     bme_data *readings = malloc(window_s * sizeof(bme_data));
     if (readings == NULL) {
-        printf("Error al asignar memoria\n");
+        //printf("Error al asignar memoria\n");
         return NULL;
     }
 
@@ -492,7 +492,7 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
         temp_adc = temp_adc | (tmp & 0xf0) >> 4;
 
         uint32_t temp = bme_temp_celsius(temp_adc);
-        printf("Temperatura: %f\n", (float)temp);
+        //printf("Temperatura: %f\n", (float)temp / 100);
 
         // Se obtienen los datos de presion
         uint32_t pres_adc = 0;
@@ -504,7 +504,7 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
         pres_adc = pres_adc | (tmp & 0xf0) >> 4;
 
         uint32_t pres = bme_pres_pa(pres_adc);
-        printf("Presion: %f\n", (float)pres / 100);
+        //printf("Presion: %f\n", (float)pres / 100);
 
         bme_data data;
         data.temperature = (float)temp / 100;

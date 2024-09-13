@@ -44,7 +44,7 @@ float **extraer_top_5(bme_data reads[], size_t n) {
     // Reservar memoria para el arreglo que contendrá los 5 mayores números
     float **top5 = (float **)malloc(2 * sizeof(float *));
     if (top5 == NULL) {
-        printf("Error al asignar memoria\n");
+        //printf("Error al asignar memoria\n");
         return NULL;
     }
 
@@ -52,7 +52,7 @@ float **extraer_top_5(bme_data reads[], size_t n) {
     top5[1] = (float *)malloc(5 * sizeof(float));  // Presion
 
     if (top5[0] == NULL || top5[1] == NULL) {
-        printf("Error al asignar memoria\n");
+        //printf("Error al asignar memoria\n");
         free(top5[0]);
         free(top5[1]);
         free(top5);
@@ -119,7 +119,7 @@ void calcular_rms(bme_data readings[], size_t n, float *rms_temp, float *rms_pre
     int *presiones = (int *)malloc(n * sizeof(int));
 
     if (temperaturas == NULL || presiones == NULL) {
-        printf("Error al asignar memoria para los cálculos RMS\n");
+        //printf("Error al asignar memoria para los cálculos RMS\n");
         free(temperaturas);
         free(presiones);
         return;
@@ -190,6 +190,57 @@ int serial_write_0(const char *msg, int len) {
     return result;
 }
 
+void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pres, int32_t window) {
+    // Enviar la ventana
+    //uart_write_bytes(UART_NUM, (const char *)&window, sizeof(int32_t));
+    //vTaskDelay(pdMS_TO_TICKS(1000));
+    char dataResponse1[6];
+    //printf("Beginning initialization... \n");
+    while (1)
+    {
+        int rLen = serial_read(dataResponse1, 6);
+        if (rLen > 0)
+        {
+            if (strcmp(dataResponse1, "BEGIN") == 0)
+            {
+                //uart_write_bytes(UART_NUM,"OK\0",3);
+                //printf("Initialization complete\n");
+                break;
+            }
+        }
+    }
+    //printf("Begin sending... \n");
+    // Enviar los datos
+    float data_point[3];
+    for (int i = 0; i < window; i++) {
+        data_point[0] = data[i].temperature;
+        data_point[1] = data[i].presure;
+        data_point[2] = (float)window;
+
+        //printf("Temperatura: %f\n", data_point[0]);
+        //printf("Presion: %f\n", data_point[1]);
+        
+        uart_write_bytes(UART_NUM, (const char *)data_point, sizeof(float) * 3);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    //uart_write_bytes(UART_NUM, (const char *)data, sizeof(bme_data) * window);
+    //vTaskDelay(pdMS_TO_TICKS(50));
+
+    // Enviar los top 5 y el RMS
+    
+    float pkg[12];
+    for (int i = 0; i < 5; i++) {
+        pkg[i] = top5[0][i];
+        pkg[i + 5] = top5[1][i];
+    }
+
+    pkg[10] = rms_temp;
+    pkg[11] = rms_pres;
+    uart_write_bytes(UART_NUM, (const char *)pkg, sizeof(float) * 12);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+}
+
 int HAS_SENT_WINDOW_YET = 0;
 
 // CAMBIAR PARA QUE CONCUERDE CON PYTHON
@@ -204,47 +255,48 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             //     // uart_write_bytes(UART_NUM, (const char *)window, sizeof(int32_t));
             // }
             // Extraer la ventana
-            printf("Ventana actual: %ld\n", window);
+            //printf("Ventana actual: %ld\n", window);
             // Enviar ventana y calcular datos
             size_t n_reads;
             bme_data *data = bme_read_data(window, &n_reads);
             if (data == NULL) {
-                printf("Error al leer datos\n");
+                //printf("Error al leer datos\n");
                 break;
             }
 
             // Extraer los 5 mayores valores
             float **top5 = extraer_top_5(data, n_reads);
             if (top5 == NULL) {
-                printf("Error al extraer los 5 mayores valores\n");
+                //printf("Error al extraer los 5 mayores valores\n");
                 free(data);
                 break;
             }
-            printf("Top 5 Temperaturas: ");
+            //printf("Top 5 Temperaturas: ");
             for (int i = 0; i < 5; i++) {
-                printf("%f ", top5[0][i]);
+                // printf("%f ", top5[0][i]);
             }
-            printf("\n");
-            printf("Top 5 Presiones: ");
+            //printf("\n");
+            //printf("Top 5 Presiones: ");
             for (int i = 0; i < 5; i++) {
-                printf("%f ", top5[1][i]);
+                // printf("%f ", top5[1][i]);
             }
-            printf("\n");
+            //printf("\n");
             // Calcular el RMS
             float rms_temp = 0.0, rms_pres = 0.0;
             calcular_rms(data, n_reads, &rms_temp, &rms_pres);
-            printf("RMS Temperatura: %f\n", rms_temp);
-            printf("RMS Presion: %f\n", rms_pres);
+            //printf("RMS Temperatura: %f\n", rms_temp);
+            //printf("RMS Presion: %f\n", rms_pres);
 
             // Enviar los datos al controlador
             // AQUI EL PROCESO PARA MANDAR DATOS
-
+            bme_data_sender(data, top5, rms_temp, rms_pres, window);
+            
             // tamano ventana
             // uart_write_bytes(UART_NUM, (const char *)window, sizeof(int32_t));
             // vTaskDelay(pdMS_TO_TICKS(50));
 
             // ventana
-            serial_write_0((const char *)data, sizeof(bme_data) * window);
+            //serial_write_0((const char *)data, sizeof(bme_data) * window);
             // uart_write_bytes(UART_NUM, (const char *)data, sizeof(bme_data));
             // vTaskDelay(pdMS_TO_TICKS(50));
 
@@ -268,14 +320,14 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             break;
         case 1:
             write_window_nvs(body);
-            printf("Ventana cambiada a: %ld\n", body);
+            //printf("Ventana cambiada a: %ld\n", body);
             break;
         case 2:
-            printf("Cerrando comunicación\n");
+            //printf("Cerrando comunicación\n");
             esp_restart();
             break;
         default:
-            printf("Comando no reconocido\n");
+            //printf("Comando no reconocido\n");
             break;
     }
 }
@@ -297,16 +349,16 @@ void app_main(void) {
         // Espera señal
         if (serial_read(signal_buffer, 5) == 0) {
             // printf("esperando señal");
+            vTaskDelay(pdMS_TO_TICKS(1000));
             continue;
         }
         // Reacciona al tipo de señal
         uint8_t signal_type = signal_buffer[0];
 
         uint32_t *signal_body = &signal_buffer[1];
-        printf("antes de cmd handler");
+
         command_handler(signal_type, *signal_body);
         vTaskDelay(pdMS_TO_TICKS(1000));
-        printf("fuera de cmd handler");
         // fflush(stdout);
     }
 }
