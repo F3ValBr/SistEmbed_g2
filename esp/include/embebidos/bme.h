@@ -6,6 +6,7 @@
 typedef struct bme_data {
     float temperature;
     float presure;
+    float humidity;
 } bme_data;
 
 esp_err_t sensor_init(void);
