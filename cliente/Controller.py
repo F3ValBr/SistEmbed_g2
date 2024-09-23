@@ -166,7 +166,7 @@ class Controller:
         axs[1].plot(data_pres)
         axs[1].set_title(f"Presion (RMS = {self.pres_rms})")
         axs[1].set_ylabel("Pascales (Pa)")
-        axs[1].set_ylim(1000, 1400)
+        axs[1].set_ylim(1000, 1500)
 
         for value in pres_points:
             axs[1].plot(value[0], value[1], 'ro')
