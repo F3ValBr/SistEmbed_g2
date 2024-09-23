@@ -456,8 +456,8 @@ int bme_hum_percent(uint32_t hum_adc){
     bme_i2c_read(I2C_NUM_0, &addr_par_h6, par + 7, 1);
     bme_i2c_read(I2C_NUM_0, &addr_par_h7, par + 8, 1);
 
-    par_h1 = (par[1] << 8) | (par[0] & 0x0f);
-    par_h2 = (par[3] << 8) | (par[2] & 0xf0) >> 4;
+    par_h1 = (par[1] << 4) | (par[0] & 0x0f);
+    par_h2 = (par[3] << 4) | ((par[2] & 0xf0) >> 4);
     par_h3 = par[4];
     par_h4 = par[5];
     par_h5 = par[6];
