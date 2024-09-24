@@ -211,8 +211,10 @@ int serial_write_0(const char *msg, int len) {
 
 void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pres, float rms_hum, int32_t window) {
     // Enviar la ventana
-    //uart_write_bytes(UART_NUM, (const char *)&window, sizeof(int32_t));
-    //vTaskDelay(pdMS_TO_TICKS(1000));
+    float window_float = (float)window;
+    uart_write_bytes(UART_NUM, (const char *)&window_float, sizeof(float));
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
     char dataResponse1[6];
     //printf("Beginning initialization... \n");
     while (1)
@@ -245,8 +247,6 @@ void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pre
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
     vTaskDelay(pdMS_TO_TICKS(1000));
-    //uart_write_bytes(UART_NUM, (const char *)data, sizeof(bme_data) * window);
-    //vTaskDelay(pdMS_TO_TICKS(50));
 
     // Enviar los top 5 y el RMS
     float data_top5[15];
