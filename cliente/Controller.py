@@ -35,13 +35,23 @@ class Controller:
         self.window_data = []
 
     def receive_bme_data(self):
-        data = self.ser.read(12)
-        data = unpack('fff', data)
+        data = self.ser.read(16)
+        data = unpack('ffff', data)
         return data
     
     def receive_measures(self):
         data = self.ser.read(48)
         data = unpack("5f5fff", data)
+        return data
+    
+    def receive_top(self):
+        data = self.ser.read(20)
+        data = unpack("5f", data)
+        return data
+    
+    def receive_rms(self):
+        data = self.ser.read(12)
+        data = unpack("fff", data)
         return data
 
     def get_window(self):
@@ -54,13 +64,13 @@ class Controller:
 
         counter = 0
         while True:
-            if self.ser.in_waiting > 11:
+            if self.ser.in_waiting > 15:
                 try:
                     obt_data = self.receive_bme_data()
                     print(obt_data)
                     self.window_data.append(obt_data)
                     if self.first_execution and len(self.window_data) == 1:
-                        self.window_size = int(obt_data[2])
+                        self.window_size = int(obt_data[3])
                         self.first_execution = False
                 except Exception as e:
                     print(e)
@@ -75,15 +85,15 @@ class Controller:
         print("Datos obtenidos")
         print(self.window_data)
         sleep(1)
-        print("Obteniendo medidas adicionales...")
+        print("Obteniendo medidas - Top 5")
         counter_measures = 0
         
         while True:
-            if self.ser.in_waiting > 47:
+            if self.ser.in_waiting > 19:
                 try:
-                    m_data = self.receive_measures()
-                    print(m_data)
-                    self.window_data.append(m_data)
+                    top_data = self.receive_top()
+                    print(top_data)
+                    self.window_data.append(top_data)
                 except Exception as e:
                     print(e)
                     continue
@@ -91,9 +101,37 @@ class Controller:
                     counter_measures += 1
                     print(f"Contador data: {counter_measures}")
                 finally:
-                    if counter_measures == 1:
-                        print("Medidas obtenidas")
+                    if counter_measures == 3:
+                        print("Medidas del top 5 obtenidas")
                         break
+        
+        print("Datos obtenidos")
+        print(self.window_data)
+        sleep(1)
+        print("Obteniendo medidas - RMS")
+        counter_rms = 0
+
+        while True:
+            if self.ser.in_waiting > 11:
+                try:
+                    rms_data = self.receive_rms()
+                    print(rms_data)
+                    self.window_data.append(rms_data)
+                except Exception as e:
+                    print(e)
+                    continue
+                else:
+                    counter_rms += 1
+                    print(f"Contador data: {counter_rms}")
+                finally:
+                    if counter_rms == 1:
+                        print("Medidas RMS obtenidas")
+                        break
+
+        print("Datos obtenidos")
+        print(self.window_data)
+        sleep(1)
+        print("Graficando...")
 
         # print(self.window_data)
 

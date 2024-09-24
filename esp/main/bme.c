@@ -425,8 +425,8 @@ int bme_pres_pa(uint32_t pres_adc) {
 }
 
 int bme_hum_percent(uint32_t hum_adc){
-    //
-    //
+    // Datasheet[25]
+    // https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme688-ds000.pdf#page=25
 
     // Se obtienen los parametros de calibracion
     uint8_t addr_par_h1_lsb = 0xE2, addr_par_h1_msb = 0xE3;
@@ -457,7 +457,7 @@ int bme_hum_percent(uint32_t hum_adc){
     bme_i2c_read(I2C_NUM_0, &addr_par_h7, par + 8, 1);
 
     par_h1 = (par[1] << 4) | (par[0] & 0x0f);
-    par_h2 = (par[3] << 4) | ((par[2] & 0xf0) >> 4);
+    par_h2 = (par[3] << 4) | (par[2] & 0xf0) >> 4;
     par_h3 = par[4];
     par_h4 = par[5];
     par_h5 = par[6];
@@ -476,10 +476,11 @@ int bme_hum_percent(uint32_t hum_adc){
     temp_scaled = (((int32_t)t_fine * 5) + 128) >> 8;
     var1 = (int32_t)(hum_adc - ((int32_t)((int32_t)par_h1 * 16))) -
            (((temp_scaled * (int32_t)par_h3) / ((int32_t)100)) >> 1);
-    var2 = ((int32_t)par_h2 *
-            (((temp_scaled * (int32_t)par_h4) / ((int32_t)100)) +
-             (((temp_scaled * ((temp_scaled * (int32_t)par_h5) / ((int32_t)100)) >> 6) / ((int32_t)100)) +
-              (int32_t)(1 << 14))) >> 10;
+    var2 = ((int32_t)par_h2 * (((temp_scaled * 
+            (int32_t)par_h4) / ((int32_t)100)) +
+            (((temp_scaled * ((temp_scaled * (int32_t)par_h5) / 
+            ((int32_t)100))) >> 6) / ((int32_t)100)) +
+            ((int32_t)(1 << 14)))) >> 10;
     var3 = var1 * var2;
     var4 = (int32_t)par_h6 << 7;
     var4 = ((var4) + ((temp_scaled * (int32_t)par_h7) / ((int32_t)100))) >> 4;
@@ -585,12 +586,12 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
         hum_adc = hum_adc | tmp;
 
         uint32_t hum = bme_hum_percent(hum_adc);
-        //printf("Humedad: %f\n", (float)hum / 100);
+        //printf("Humedad: %f\n", (float)hum / 1000);
 
         bme_data data;
         data.temperature = (float)temp / 100;
         data.presure = (float)pres / 100;
-        data.humidity = (float)hum / 100;
+        data.humidity = (float)hum / 1000;
 
         readings[*n_reads] = data;
         (*n_reads)++;
