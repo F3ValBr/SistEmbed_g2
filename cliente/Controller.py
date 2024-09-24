@@ -15,9 +15,11 @@ class Controller:
     temp_top = None
     pres_top = None
     hum_top = None
+    gas_top = None
     temp_rms = None
     pres_rms = None
     hum_rms = None
+    gas_rms = None
 
     def __init__(self, serial_port=None):
         self.window_size = 10
@@ -121,7 +123,7 @@ class Controller:
                     counter_measures += 1
                     print(f"Contador data: {counter_measures}")
                 finally:
-                    if counter_measures == 3:
+                    if counter_measures == 4:
                         print("Medidas del top 5 obtenidas")
                         self.window_data.append(top5_array)
                         break
@@ -135,9 +137,9 @@ class Controller:
         counter_rms = 0
 
         while True:
-            if self.ser.in_waiting > 11:
+            if self.ser.in_waiting > 15:
                 try:
-                    rms_data = self.receive_rms()
+                    rms_data = self.receive_bme_data()
                     print(rms_data)
                     self.window_data.append(rms_data)
                 except Exception as e:
@@ -192,18 +194,22 @@ class Controller:
         self.temp_top = data_top[0]
         self.pres_top = data_top[1]
         self.hum_top = data_top[2]
+        self.gas_top = data_top[3]
         self.temp_rms = data_rms[0]
         self.pres_rms = data_rms[1]
         self.hum_rms = data_rms[2]
+        self.gas_rms = data_rms[3]
         
         data_array = np.array(data_bme)
         data_temp = data_array[:, 0]
         data_pres = data_array[:, 1]
         data_hum = data_array[:, 2]
+        data_gas = data_array[:, 3]
 
         temp_points = []
         pres_points = []
         hum_points = []
+        gas_points = []
 
         for i in range(5):
             temp_idx = np.where(data_temp == self.temp_top[i])
@@ -215,9 +221,12 @@ class Controller:
             hum_idx = np.where(data_hum == self.hum_top[i])
             hum_points.append((hum_idx, self.hum_top[i]))
 
-        fig, axs = plt.subplots(1, 3)
+            gas_idx = np.where(data_gas == self.gas_top[i])
+            gas_points.append((gas_idx, self.gas_top[i]))
 
-        fig.suptitle(f"Temperatura, Presion y Humedad (ventana: {self.window_size}")
+        fig, axs = plt.subplots(1, 4)
+
+        fig.suptitle(f"Temperatura, Presion, Humedad y Gas (ventana: {self.window_size}")
 
         axs[0].plot(data_temp)
         axs[0].set_title(f"Temperatura (RMS = {self.temp_rms})")
@@ -242,6 +251,14 @@ class Controller:
 
         for value in hum_points:
             axs[2].plot(value[0], value[1], 'ro')
+
+        axs[3].plot(data_gas)
+        axs[3].set_title(f"Gas (RMS = {self.gas_rms})")
+        axs[3].set_ylabel("Ohmios (Ω)")
+        axs[3].set_ylim(0, 100)
+
+        for value in gas_points:
+            axs[3].plot(value[0], value[1], 'ro')
         
         plt.show()
 

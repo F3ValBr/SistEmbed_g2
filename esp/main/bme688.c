@@ -42,7 +42,7 @@
 // Función para extraer los 5 mayores números por presion, temperatura, humedad
 float **extraer_top_5(bme_data reads[], size_t n) {
     // Reservar memoria para el arreglo que contendrá los 5 mayores números
-    float **top5 = (float **)malloc(3 * sizeof(float *));
+    float **top5 = (float **)malloc(4 * sizeof(float *));
     if (top5 == NULL) {
         //printf("Error al asignar memoria\n");
         return NULL;
@@ -51,12 +51,14 @@ float **extraer_top_5(bme_data reads[], size_t n) {
     top5[0] = (float *)malloc(5 * sizeof(float));  // Temperatura
     top5[1] = (float *)malloc(5 * sizeof(float));  // Presion
     top5[2] = (float *)malloc(5 * sizeof(float));  // Humedad
+    top5[3] = (float *)malloc(5 * sizeof(float));  // Gas
 
     if (top5[0] == NULL || top5[1] == NULL || top5[2] == NULL) {
         //printf("Error al asignar memoria\n");
         free(top5[0]);
         free(top5[1]);
         free(top5[2]);
+        free(top5[3]);
         free(top5);
         return NULL;
     }
@@ -66,6 +68,7 @@ float **extraer_top_5(bme_data reads[], size_t n) {
         top5[0][i] = -FLT_MAX;
         top5[1][i] = -FLT_MAX;
         top5[2][i] = -FLT_MAX;
+        top5[3][i] = -FLT_MAX;
     }
 
     // Extraer los 5 mayores números
@@ -73,6 +76,7 @@ float **extraer_top_5(bme_data reads[], size_t n) {
         float curr_pres = (float)reads[i].presure;
         float curr_temp = (float)reads[i].temperature;
         float curr_hum = (float)reads[i].humidity;
+        float curr_gas = (float)reads[i].gas_resistance;
 
         for (int j = 0; j < 5; j++) {
             if (curr_temp > top5[0][j]) {
@@ -103,6 +107,16 @@ float **extraer_top_5(bme_data reads[], size_t n) {
                 break;
             }
         }
+
+        for (int j = 0; j < 5; j++) {
+            if (curr_gas > top5[3][j]) {
+                for (int k = 4; k > j; k--) {
+                    top5[3][k] = top5[3][k - 1];
+                }
+                top5[3][j] = curr_gas;
+                break;
+            }
+        }
     }
 
     return top5;
@@ -127,17 +141,19 @@ float rmsValue(int arr[], int n) {
     return root;
 }
 
-void calcular_rms(bme_data readings[], size_t n, float *rms_temp, float *rms_pres, float *rms_hum) {
+void calcular_rms(bme_data readings[], size_t n, float *rms_temp, float *rms_pres, float *rms_hum, float *rms_gas) {
     // Crear arreglos temporales para las temperaturas y presiones
     int *temperaturas = (int *)malloc(n * sizeof(int));
     int *presiones = (int *)malloc(n * sizeof(int));
     int *humedades = (int *)malloc(n * sizeof(int));
+    int *gases = (int *)malloc(n * sizeof(int));
 
     if (temperaturas == NULL || presiones == NULL || humedades == NULL) {
         //printf("Error al asignar memoria para los cálculos RMS\n");
         free(temperaturas);
         free(presiones);
         free(humedades);
+        free(gases);
         return;
     }
 
@@ -146,17 +162,20 @@ void calcular_rms(bme_data readings[], size_t n, float *rms_temp, float *rms_pre
         temperaturas[i] = readings[i].temperature;
         presiones[i] = readings[i].presure;
         humedades[i] = readings[i].humidity;
+        gases[i] = readings[i].gas_resistance;
     }
 
     // Calcular el RMS para temperatura y presión
     *rms_temp = rmsValue(temperaturas, n);
     *rms_pres = rmsValue(presiones, n);
     *rms_hum = rmsValue(humedades, n);
+    *rms_gas = rmsValue(gases, n);
 
     // Liberar memoria de los arreglos temporales
     free(temperaturas);
     free(presiones);
     free(humedades);
+    free(gases);
 }
 
 // Function for sending things to UART1
@@ -209,7 +228,7 @@ int serial_write_0(const char *msg, int len) {
     return result;
 }
 
-void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pres, float rms_hum, int32_t window) {
+void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pres, float rms_hum, float rms_gas, int32_t window) {
     // Enviar la ventana
     float window_float = (float)window;
     uart_write_bytes(UART_NUM, (const char *)&window_float, sizeof(float));
@@ -237,11 +256,12 @@ void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pre
         data_point[0] = data[i].temperature;
         data_point[1] = data[i].presure;
         data_point[2] = data[i].humidity;
-        data_point[3] = (float)window;
+        data_point[3] = data[i].gas_resistance;
 
         //printf("Temperatura: %f\n", data_point[0]);
         //printf("Presion: %f\n", data_point[1]);
         //printf("Humedad: %f\n", data_point[2]);
+        //printf("Gas: %f\n", data_point[3]);
         
         uart_write_bytes(UART_NUM, (const char *)data_point, sizeof(float) * 4);
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -249,24 +269,26 @@ void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pre
     vTaskDelay(pdMS_TO_TICKS(1000));
 
     // Enviar los top 5 y el RMS
-    float data_top5[15];
+    float data_top5[20];
     for (int i = 0; i < 5; i++) {
         data_top5[i] = top5[0][i];
         data_top5[i + 5] = top5[1][i];
         data_top5[i + 10] = top5[2][i];
+        data_top5[i + 15] = top5[3][i];
     }
     // Enviar de a 5 valores el top 5
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         uart_write_bytes(UART_NUM, (const char *)&data_top5[i * 5], sizeof(float) * 5);
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
     vTaskDelay(pdMS_TO_TICKS(1000));
 
-    float data_rms[3];
+    float data_rms[4];
     data_rms[0] = rms_temp;
     data_rms[1] = rms_pres;
     data_rms[2] = rms_hum;
-    uart_write_bytes(UART_NUM, (const char *)data_rms, sizeof(float) * 3);
+    data_rms[3] = rms_gas;
+    uart_write_bytes(UART_NUM, (const char *)data_rms, sizeof(float) * 4);
     vTaskDelay(pdMS_TO_TICKS(1000));
 }
 
@@ -295,20 +317,21 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             }
 
             // Calcular el RMS
-            float rms_temp = 0.0, rms_pres = 0.0, rms_hum = 0.0;
-            calcular_rms(data, n_reads, &rms_temp, &rms_pres, &rms_hum);
+            float rms_temp = 0.0, rms_pres = 0.0, rms_hum = 0.0, rms_gas = 0.0;
+            calcular_rms(data, n_reads, &rms_temp, &rms_pres, &rms_hum, &rms_gas);
             //printf("RMS Temperatura: %f\n", rms_temp);
             //printf("RMS Presion: %f\n", rms_pres);
             //printf("RMS Humedad: %f\n", rms_hum);
 
             // Enviar los datos al controlador
-            bme_data_sender(data, top5, rms_temp, rms_pres, rms_hum, window);
+            bme_data_sender(data, top5, rms_temp, rms_pres, rms_hum, rms_gas, window);
 
             // Liberar memoria
             free(data);
             free(top5[0]);
             free(top5[1]);
             free(top5[2]);
+            free(top5[3]);
             free(top5);
             break;
         case 1:

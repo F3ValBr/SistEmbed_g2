@@ -495,6 +495,24 @@ int bme_hum_percent(uint32_t hum_adc){
     return calc_hum;
 }
 
+int bme_gas_ohm(uint32_t gas_res_adc, uint8_t gas_range){
+    // Datasheet[28]
+    // https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme688-ds000.pdf#page=28
+
+    uint32_t calc_gas_res;
+    uint32_t var1 = UINT32_C(262144) >> gas_range;
+    int32_t var2 = (int32_t)gas_res_adc - INT32_C(512);
+
+    var2 *= INT32_C(3);
+    var2 = INT32_C(4096) + var2;
+
+    /* multiplying 10000 then dividing then multiplying by 100 instead of multiplying by 1000000 to prevent overflow */
+    calc_gas_res = (UINT32_C(10000) * var1) / (uint32_t)var2;
+    calc_gas_res = calc_gas_res * 100;
+
+    return (int)calc_gas_res;
+}
+
 void bme_get_mode(void) {
     uint8_t reg_mode = 0x74;
     uint8_t tmp;
@@ -543,6 +561,8 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
     uint8_t forced_temp_addr[] = {0x22, 0x23, 0x24};
     uint8_t forced_pres_addr[] = {0x1F, 0x20, 0x21};
     uint8_t forced_hum_addr[] = {0x25, 0x26};
+    uint8_t forced_gas_addr[] = {0x2C, 0x2D};
+    uint8_t forced_gas_range_addr = 0x2D;
 
     bme_data *readings = malloc(window_s * sizeof(bme_data));
     if (readings == NULL) {
@@ -588,10 +608,25 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
         uint32_t hum = bme_hum_percent(hum_adc);
         //printf("Humedad: %f\n", (float)hum / 1000);
 
+        // Se obtienen los datos de gas
+        uint32_t gas_res_adc = 0;
+        bme_i2c_read(I2C_NUM_0, &forced_gas_addr[0], &tmp, 1);
+        gas_res_adc = gas_res_adc | tmp << 2;
+        bme_i2c_read(I2C_NUM_0, &forced_gas_addr[1], &tmp, 1);
+        gas_res_adc = gas_res_adc | (tmp & 0xc0) >> 6;
+
+        uint8_t gas_range;
+        bme_i2c_read(I2C_NUM_0, &forced_gas_range_addr, &gas_range, 1);
+        gas_range = (gas_range & 0x0f);
+
+        uint32_t gas_res = bme_gas_ohm(gas_res_adc, gas_range);
+        //printf("Resistencia de gas: %f\n", (float)gas_res / 1000);
+
         bme_data data;
         data.temperature = (float)temp / 100;
         data.presure = (float)pres / 100;
         data.humidity = (float)hum / 1000;
+        data.gas_resistance = (float)gas_res / 1000;
 
         readings[*n_reads] = data;
         (*n_reads)++;
