@@ -411,11 +411,11 @@ int bme_pres_pa(uint32_t pres_adc) {
     var1 = var1 >> 18;
     var1 = ((32768 + var1) * (int32_t)par_p1) >> 15;
     calc_pres = 1048576 - pres_adc;
-    calc_pres = (int32_t)((calc_pres - (var2 >> 12)) * ((uint32_t)3125));
+    calc_pres = (uint32_t)((calc_pres - (var2 >> 12)) * ((uint32_t)3125));
     if (calc_pres >= (1 << 30)) {
-        calc_pres = ((calc_pres / var1) << 1);
+        calc_pres = ((calc_pres / (uint32_t)var1) << 1);
     } else {
-        calc_pres = ((calc_pres << 1) / var1);
+        calc_pres = ((calc_pres << 1) / (uint32_t)var1);
     }
     var1 = ((int32_t)par_p9 * (int32_t)(((calc_pres >> 3) * (calc_pres >> 3)) >> 13)) >> 12;
     var2 = ((int32_t)(calc_pres >> 2) * (int32_t)par_p8) >> 13;
