@@ -1,0 +1,1 @@
+void calcularFFT(float *array, int size, float *array_re, float *array_im);
