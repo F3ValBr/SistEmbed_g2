@@ -44,7 +44,7 @@ float **extraer_top_5(bme_data reads[], size_t n) {
     // Reservar memoria para el arreglo que contendrá los 5 mayores números
     float **top5 = (float **)malloc(4 * sizeof(float *));
     if (top5 == NULL) {
-        //printf("Error al asignar memoria\n");
+        // printf("Error al asignar memoria\n");
         return NULL;
     }
 
@@ -54,7 +54,7 @@ float **extraer_top_5(bme_data reads[], size_t n) {
     top5[3] = (float *)malloc(5 * sizeof(float));  // Gas
 
     if (top5[0] == NULL || top5[1] == NULL || top5[2] == NULL) {
-        //printf("Error al asignar memoria\n");
+        // printf("Error al asignar memoria\n");
         free(top5[0]);
         free(top5[1]);
         free(top5[2]);
@@ -149,7 +149,7 @@ void calcular_rms(bme_data readings[], size_t n, float *rms_temp, float *rms_pre
     int *gases = (int *)malloc(n * sizeof(int));
 
     if (temperaturas == NULL || presiones == NULL || humedades == NULL) {
-        //printf("Error al asignar memoria para los cálculos RMS\n");
+        // printf("Error al asignar memoria para los cálculos RMS\n");
         free(temperaturas);
         free(presiones);
         free(humedades);
@@ -235,22 +235,19 @@ void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pre
     vTaskDelay(pdMS_TO_TICKS(1000));
 
     char dataResponse1[6];
-    //printf("Beginning initialization... \n");
-    while (1)
-    {
+    // printf("Beginning initialization... \n");
+    while (1) {
         int rLen = serial_read(dataResponse1, 6);
-        if (rLen > 0)
-        {
-            if (strcmp(dataResponse1, "BEGIN") == 0)
-            {
-                //uart_write_bytes(UART_NUM,"OK\0",3);
-                //printf("Initialization complete\n");
+        if (rLen > 0) {
+            if (strcmp(dataResponse1, "BEGIN") == 0) {
+                // uart_write_bytes(UART_NUM,"OK\0",3);
+                // printf("Initialization complete\n");
                 break;
             }
         }
     }
-    //printf("Begin sending... \n");
-    // Enviar los datos
+    // printf("Begin sending... \n");
+    //  Enviar los datos
     float data_point[4];
     for (int i = 0; i < window; i++) {
         data_point[0] = data[i].temperature;
@@ -258,11 +255,11 @@ void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pre
         data_point[2] = data[i].humidity;
         data_point[3] = data[i].gas_resistance;
 
-        //printf("Temperatura: %f\n", data_point[0]);
-        //printf("Presion: %f\n", data_point[1]);
-        //printf("Humedad: %f\n", data_point[2]);
-        //printf("Gas: %f\n", data_point[3]);
-        
+        // printf("Temperatura: %f\n", data_point[0]);
+        // printf("Presion: %f\n", data_point[1]);
+        // printf("Humedad: %f\n", data_point[2]);
+        // printf("Gas: %f\n", data_point[3]);
+
         uart_write_bytes(UART_NUM, (const char *)data_point, sizeof(float) * 4);
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
@@ -299,8 +296,8 @@ void command_handler(uint8_t signal_type, uint32_t body) {
     switch (signal_type) {
         case 0:
             int32_t window = read_window_nvs();
-            //printf("Ventana actual: %ld\n", window);
-            // Enviar ventana y calcular datos
+            // printf("Ventana actual: %ld\n", window);
+            //  Enviar ventana y calcular datos
             size_t n_reads;
             bme_data *data = bme_read_data(window, &n_reads);
             if (data == NULL) {
@@ -319,9 +316,9 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             // Calcular el RMS
             float rms_temp = 0.0, rms_pres = 0.0, rms_hum = 0.0, rms_gas = 0.0;
             calcular_rms(data, n_reads, &rms_temp, &rms_pres, &rms_hum, &rms_gas);
-            //printf("RMS Temperatura: %f\n", rms_temp);
-            //printf("RMS Presion: %f\n", rms_pres);
-            //printf("RMS Humedad: %f\n", rms_hum);
+            // printf("RMS Temperatura: %f\n", rms_temp);
+            // printf("RMS Presion: %f\n", rms_pres);
+            // printf("RMS Humedad: %f\n", rms_hum);
 
             // Enviar los datos al controlador
             bme_data_sender(data, top5, rms_temp, rms_pres, rms_hum, rms_gas, window);
@@ -336,14 +333,14 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             break;
         case 1:
             write_window_nvs(body);
-            //printf("Ventana cambiada a: %ld\n", body);
+            // printf("Ventana cambiada a: %ld\n", body);
             break;
         case 2:
-            //printf("Cerrando comunicación\n");
+            // printf("Cerrando comunicación\n");
             esp_restart();
             break;
         default:
-            //printf("Comando no reconocido\n");
+            // printf("Comando no reconocido\n");
             break;
     }
 }
@@ -370,12 +367,12 @@ void app_main(void) {
         // Reacciona al tipo de señal
         uint8_t signal_type = signal_buffer[0];
 
-        //uint32_t *signal_body = &signal_buffer[1];
-        // Convierte los siguientes 4 bytes a uint32_t
+        // uint32_t *signal_body = &signal_buffer[1];
+        //  Convierte los siguientes 4 bytes a uint32_t
         uint32_t signal_body;
         memcpy(&signal_body, &signal_buffer[1], sizeof(uint32_t));
 
-        //command_handler(signal_type, *signal_body);
+        // command_handler(signal_type, *signal_body);
         command_handler(signal_type, signal_body);
         vTaskDelay(pdMS_TO_TICKS(1000));
         // fflush(stdout);
