@@ -21,7 +21,10 @@
 #define RXD_PIN 3            // UART RX pin
 #define UART_NUM UART_NUM_0  // UART port number
 #define BAUD_RATE 115200     // Baud rate
+
+#ifndef M_PI
 #define M_PI 3.14159265358979323846
+#endif
 
 #define I2C_MASTER_SCL_IO GPIO_NUM_22  // GPIO pin
 #define I2C_MASTER_SDA_IO GPIO_NUM_21  // GPIO pin

@@ -1,6 +1,8 @@
 #include <math.h>
 
-// #define M_PI 3.14159
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 /**
  * @brief Funcion que calcula la FFT de un arreglo y guarda el resultado inplace
