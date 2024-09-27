@@ -8,6 +8,7 @@
 
 #include "driver/i2c.h"
 #include "driver/uart.h"
+#include "embebidos/FFT.h"
 #include "embebidos/bme.h"
 #include "embebidos/nvs_embebidos.h"
 #include "esp_log.h"
@@ -291,6 +292,25 @@ void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pre
 
 int HAS_SENT_WINDOW_YET = 0;
 
+/**
+ * @brief Separa valores leídos según dato.
+ *
+ * @param temp Arreglo de temperaturas a llenar.
+ * @param hum Arreglo de humedades a llenar.
+ * @param gas Arreglo de gas a llenar.
+ * @param pres Arreglo de presión a llenar.
+ * @param data Arreglo de origen con datos agrupados.
+ * @param window_size Tamaño de arreglo.
+ */
+void fill_THCP_arrays(float *temp, float *hum, float *gas, float *pres, bme_data *data, int window_size) {
+    for (int i = 0; i < window_size; i++) {
+        temp[i] = data[i].temperature;
+        hum[i] = data[i].humidity;
+        gas[i] = data[i].gas_resistance;
+        pres[i] = data[i].presure;
+    }
+}
+
 // Función para manejar los comandos recibidos por UART
 void command_handler(uint8_t signal_type, uint32_t body) {
     switch (signal_type) {
@@ -319,6 +339,16 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             // printf("RMS Temperatura: %f\n", rms_temp);
             // printf("RMS Presion: %f\n", rms_pres);
             // printf("RMS Humedad: %f\n", rms_hum);
+
+            // Calcular FFT
+
+            float array_re[window], array_im[window];
+            float temp[window], hum[window], gas[window], pres[window];
+            fill_THCP_arrays(temp, hum, gas, pres, data, window);
+            calcularFFT(temp, window, array_re, array_im);
+            calcularFFT(hum, window, array_re, array_im);
+            calcularFFT(gas, window, array_re, array_im);
+            calcularFFT(pres, window, array_re, array_im);
 
             // Enviar los datos al controlador
             bme_data_sender(data, top5, rms_temp, rms_pres, rms_hum, rms_gas, window);
