@@ -344,7 +344,7 @@ int bme_temp_celsius(uint32_t temp_adc) {
     return calc_temp;
 }
 
-int bme_pres_pa(uint32_t pres_adc) {
+uint32_t bme_pres_pa(uint32_t pres_adc) {
     // Datasheet[24]
     // https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme688-ds000.pdf#page=24 var2 = (var2 / 4.0f) + (((float)dev->calib.par_p4) * 65536.0f);-ds000.pdf#page=23
 
@@ -400,10 +400,12 @@ int bme_pres_pa(uint32_t pres_adc) {
     par_p9 = (par[14] << 8) | par[13];
     par_p10 = par[15];
 
-    int64_t var1;
-    int64_t var2;
-    int64_t var3;
-    int calc_pres;
+    int32_t var1;
+    int32_t var2;
+    int32_t var3;
+    int32_t calc_pres;
+
+    const int32_t pres_ovf_check = INT32_C(0x40000000);
 
     // Esto es copiado y pegado de la documentacion
     var1 = ((int32_t)t_fine >> 1) - 64000;
@@ -414,17 +416,17 @@ int bme_pres_pa(uint32_t pres_adc) {
     var1 = var1 >> 18;
     var1 = ((32768 + var1) * (int32_t)par_p1) >> 15;
     calc_pres = 1048576 - pres_adc;
-    calc_pres = (uint32_t)((calc_pres - (var2 >> 12)) * ((uint32_t)3125));
-    if (calc_pres >= (1 << 30)) {
-        calc_pres = ((calc_pres / (uint32_t)var1) << 1);
+    calc_pres = (int32_t)((calc_pres - (var2 >> 12)) * ((uint32_t)3125));
+    if (calc_pres >= pres_ovf_check) {
+        calc_pres = ((calc_pres / var1) << 1);
     } else {
-        calc_pres = ((calc_pres << 1) / (uint32_t)var1);
+        calc_pres = ((calc_pres << 1) / var1);
     }
     var1 = ((int32_t)par_p9 * (int32_t)(((calc_pres >> 3) * (calc_pres >> 3)) >> 13)) >> 12;
     var2 = ((int32_t)(calc_pres >> 2) * (int32_t)par_p8) >> 13;
     var3 = ((int32_t)(calc_pres >> 8) * (int32_t)(calc_pres >> 8) * (int32_t)(calc_pres >> 8) * (int32_t)par_p10) >> 17;
     calc_pres = (int32_t)(calc_pres) + ((var1 + var2 + var3 + ((int32_t)par_p7 << 7)) >> 4);
-    return (int)calc_pres;
+    return (uint32_t)calc_pres;
 }
 
 int bme_hum_percent(uint32_t hum_adc){
