@@ -342,8 +342,12 @@ void command_handler(uint8_t signal_type, uint32_t body) {
 
             // Calcular FFT
 
-            float array_re[window], array_im[window];
-            float temp[window], hum[window], gas[window], pres[window];
+            float *array_re = malloc(sizeof(float) * window);
+            float *array_im = malloc(sizeof(float) * window);
+            float *temp = malloc(sizeof(float) * window);
+            float *hum = malloc(sizeof(float) * window);
+            float *gas = malloc(sizeof(float) * window);
+            float *pres = malloc(sizeof(float) * window);
             fill_THCP_arrays(temp, hum, gas, pres, data, window);
             calcularFFT(temp, window, array_re, array_im);
             calcularFFT(hum, window, array_re, array_im);
@@ -360,6 +364,12 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             free(top5[2]);
             free(top5[3]);
             free(top5);
+            free(array_re);
+            free(array_im);
+            free(temp);
+            free(hum);
+            free(gas);
+            free(pres);
             break;
         case 1:
             write_window_nvs(body);
