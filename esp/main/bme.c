@@ -429,7 +429,7 @@ uint32_t bme_pres_pa(uint32_t pres_adc) {
     return (uint32_t)calc_pres;
 }
 
-int bme_hum_percent(uint32_t hum_adc){
+int bme_hum_percent(uint32_t hum_adc) {
     // Datasheet[25]
     // https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme688-ds000.pdf#page=25
 
@@ -481,11 +481,15 @@ int bme_hum_percent(uint32_t hum_adc){
     temp_scaled = (((int32_t)t_fine * 5) + 128) >> 8;
     var1 = (int32_t)(hum_adc - ((int32_t)((int32_t)par_h1 * 16))) -
            (((temp_scaled * (int32_t)par_h3) / ((int32_t)100)) >> 1);
-    var2 = ((int32_t)par_h2 * (((temp_scaled * 
-            (int32_t)par_h4) / ((int32_t)100)) +
-            (((temp_scaled * ((temp_scaled * (int32_t)par_h5) / 
-            ((int32_t)100))) >> 6) / ((int32_t)100)) +
-            ((int32_t)(1 << 14)))) >> 10;
+    var2 = ((int32_t)par_h2 *
+            (((temp_scaled * (int32_t)par_h4) / ((int32_t)100)) +
+             (((temp_scaled *
+                ((temp_scaled * (int32_t)par_h5) /
+                 ((int32_t)100))) >>
+               6) /
+              ((int32_t)100)) +
+             ((int32_t)(1 << 14)))) >>
+           10;
     var3 = var1 * var2;
     var4 = (int32_t)par_h6 << 7;
     var4 = ((var4) + ((temp_scaled * (int32_t)par_h7) / ((int32_t)100))) >> 4;
@@ -500,7 +504,7 @@ int bme_hum_percent(uint32_t hum_adc){
     return calc_hum;
 }
 
-int bme_gas_ohm(uint32_t gas_res_adc, uint8_t gas_range){
+int bme_gas_ohm(uint32_t gas_res_adc, uint8_t gas_range) {
     // Datasheet[28]
     // https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme688-ds000.pdf#page=28
 
@@ -571,7 +575,7 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
 
     bme_data *readings = malloc(window_s * sizeof(bme_data));
     if (readings == NULL) {
-        //printf("Error al asignar memoria\n");
+        // printf("Error al asignar memoria\n");
         return NULL;
     }
 
@@ -589,7 +593,7 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
         temp_adc = temp_adc | (tmp & 0xf0) >> 4;
 
         uint32_t temp = bme_temp_celsius(temp_adc);
-        //printf("Temperatura: %f\n", (float)temp / 100);
+        // printf("Temperatura: %f\n", (float)temp / 100);
 
         // Se obtienen los datos de presion
         uint32_t pres_adc = 0;
@@ -601,7 +605,7 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
         pres_adc = pres_adc | (tmp & 0xf0) >> 4;
 
         uint32_t pres = bme_pres_pa(pres_adc);
-        //printf("Presion: %f\n", (float)pres / 100);
+        // printf("Presion: %f\n", (float)pres / 100);
 
         // Se obtienen los datos de humedad
         uint32_t hum_adc = 0;
@@ -611,7 +615,7 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
         hum_adc = hum_adc | tmp;
 
         uint32_t hum = bme_hum_percent(hum_adc);
-        //printf("Humedad: %f\n", (float)hum / 1000);
+        // printf("Humedad: %f\n", (float)hum / 1000);
 
         // Se obtienen los datos de gas
         uint32_t gas_res_adc = 0;
@@ -625,7 +629,7 @@ bme_data *bme_read_data(int window_s, size_t *n_reads) {
         gas_range = (gas_range & 0x0f);
 
         uint32_t gas_res = bme_gas_ohm(gas_res_adc, gas_range);
-        //printf("Resistencia de gas: %f\n", (float)gas_res / 1000);
+        // printf("Resistencia de gas: %f\n", (float)gas_res / 1000);
 
         bme_data data;
         data.temperature = (float)temp / 100;
