@@ -230,11 +230,7 @@ int serial_write_0(const char *msg, int len) {
 }
 
 void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pres, float rms_hum, float rms_gas, int32_t window) {
-    // Enviar la ventana
-    float window_float = (float)window;
-    uart_write_bytes(UART_NUM, (const char *)&window_float, sizeof(float));
-    vTaskDelay(pdMS_TO_TICKS(1000));
-
+    // Inicializar la comunicación
     char dataResponse1[6];
     // printf("Beginning initialization... \n");
     while (1) {
@@ -316,6 +312,11 @@ void command_handler(uint8_t signal_type, uint32_t body) {
     switch (signal_type) {
         case 0:
             int32_t window = read_window_nvs();
+            // Enviar la ventana
+            unsigned long long window_float = (unsigned long long)window;
+            uart_write_bytes(UART_NUM, (const char *)&window_float, sizeof(unsigned long long));
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            
             // printf("Ventana actual: %ld\n", window);
             //  Enviar ventana y calcular datos
             size_t n_reads;

@@ -57,10 +57,10 @@ class Controller:
         window_received = False
         win_response = None
         while True:
-            if self.ser.in_waiting > 3:
+            if self.ser.in_waiting > 7:
                 try:
-                    win_response = self.ser.read(4)
-                    win_response = unpack('f', win_response)[0]
+                    win_response = self.ser.read(8)
+                    win_response = unpack('Q', win_response)[0]
                 except Exception as e:
                     print(e)
                     continue
@@ -90,7 +90,15 @@ class Controller:
                 try:
                     obt_data = self.receive_bme_data()
                     print(obt_data)
-                    self.window_data.append(obt_data)
+                    #self.window_data.append(obt_data)
+                    # Verifica si el primer elemento (temperatura) es válido
+                    temperatura = obt_data[0]  # Primer elemento de la tupla
+                    if -50.0 <= temperatura <= 100.0 and abs(temperatura) > 0.001:
+                        self.window_data.append(obt_data)
+                    else:
+                        print(f"Temperatura fuera de rango: {temperatura}")
+                        counter -= 1
+                        #continue  # Si no es válida, no se agrega y sigue esperando
                 except Exception as e:
                     print(e)
                     continue
