@@ -9,6 +9,7 @@
 #include "driver/i2c.h"
 #include "driver/uart.h"
 #include "embebidos/FFT.h"
+#include "embebidos/THCP_monitor.h"
 #include "embebidos/bme.h"
 #include "embebidos/nvs_embebidos.h"
 #include "esp_log.h"
@@ -179,6 +180,46 @@ void calcular_rms_y_fft(bme_data readings[], size_t n, float *rms_temp, float *r
     free(gases);
 }
 
+/**
+ * @brief Calcula las métricas de una ventana a partir de un arreglo de tuplas
+ * THCP.
+ *
+ * @param readings Arreglo de tuplas THCP.
+ * @param n Tamaño de ventana.
+ * @param rms_temp Puntero a la temperatura RMS.
+ * @param rms_hum Puntero a la humedad RMS.
+ * @param rms_gas Puntero a la resistencia RMS.
+ * @param rms_pres Puntero a la presión RMS.
+ * @param temp_fft Puntero a la FFT de la temperatura.
+ * @param hum_fft Puntero a la FFT de la humedad.
+ * @param gas_fft Puntero a la FFT de la resistencia.
+ * @param pres_fft Puntero a la FFT de la presión.
+ */
+void calcula_metricas(
+    bme_data readings[], size_t n,
+    float *rms_temp, float *rms_hum, float *rms_gas, float *rms_pres,
+    WindowFFT *temp_fft, WindowFFT *hum_fft, WindowFFT *gas_fft,
+    WindowFFT *pres_fft) {
+    // Crea arreglos temporales para desempaquetar THCP.
+    float temperaturas[n];
+    float presiones[n];
+    float humedades[n];
+    float gases[n];
+    fill_THCP_arrays(temperaturas, humedades, gases, presiones, readings, n);
+
+    // Calcula el RMS para ventana de cada magnitud física.
+    *rms_temp = rmsValue(temperaturas, n);
+    *rms_pres = rmsValue(presiones, n);
+    *rms_hum = rmsValue(humedades, n);
+    *rms_gas = rmsValue(gases, n);
+
+    // Calcula FFT para la ventana de cada magnitud física.
+    calcularFFT(temperaturas, n, temp_fft->re_array, temp_fft->im_array);
+    calcularFFT(humedades, n, hum_fft->re_array, hum_fft->im_array);
+    calcularFFT(gases, n, gas_fft->re_array, gas_fft->im_array);
+    calcularFFT(presiones, n, pres_fft->re_array, pres_fft->im_array);
+}
+
 // Function for sending things to UART1
 static int uart1_printf(const char *str, va_list ap) {
     char *buf;
@@ -288,25 +329,6 @@ void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pre
 
 int HAS_SENT_WINDOW_YET = 0;
 
-/**
- * @brief Separa valores leídos según dato.
- *
- * @param temp Arreglo de temperaturas a llenar.
- * @param hum Arreglo de humedades a llenar.
- * @param gas Arreglo de gas a llenar.
- * @param pres Arreglo de presión a llenar.
- * @param data Arreglo de origen con datos agrupados.
- * @param window_size Tamaño de arreglo.
- */
-void fill_THCP_arrays(float *temp, float *hum, float *gas, float *pres, bme_data *data, int window_size) {
-    for (int i = 0; i < window_size; i++) {
-        temp[i] = data[i].temperature;
-        hum[i] = data[i].humidity;
-        gas[i] = data[i].gas_resistance;
-        pres[i] = data[i].presure;
-    }
-}
-
 // Función para manejar los comandos recibidos por UART
 void command_handler(uint8_t signal_type, uint32_t body) {
     switch (signal_type) {
@@ -334,46 +356,35 @@ void command_handler(uint8_t signal_type, uint32_t body) {
                 break;
             }
 
-            // Calcular el RMS
+            // Inicializa variables que almacenan métricas.
             float rms_temp = 0.0, rms_pres = 0.0, rms_hum = 0.0, rms_gas = 0.0;
-            calcular_rms_y_fft(data, n_reads, &rms_temp, &rms_pres, &rms_hum, &rms_gas);
+            WindowFFT temp_fft = allocate_window_FFT(n_reads);
+            WindowFFT hum_fft = allocate_window_FFT(n_reads);
+            WindowFFT gas_fft = allocate_window_FFT(n_reads);
+            WindowFFT pres_fft = allocate_window_FFT(n_reads);
+
+            calcula_metricas(data, n_reads,
+                             &rms_temp, &rms_hum, &rms_gas, &rms_pres,
+                             &temp_fft, &hum_fft, &gas_fft, &pres_fft);
             // printf("RMS Temperatura: %f\n", rms_temp);
             // printf("RMS Presion: %f\n", rms_pres);
             // printf("RMS Humedad: %f\n", rms_hum);
-
-            // Calcular FFT (Si hay que pedir malloc denuevo, mejor combinar las tareas con la funcion de rms arriba)
-            /*
-            float *array_re = malloc(sizeof(float) * window);
-            float *array_im = malloc(sizeof(float) * window);
-            float *temp = malloc(sizeof(float) * window);
-            float *hum = malloc(sizeof(float) * window);
-            float *gas = malloc(sizeof(float) * window);
-            float *pres = malloc(sizeof(float) * window);
-            fill_THCP_arrays(temp, hum, gas, pres, data, window);
-            calcularFFT(temp, window, array_re, array_im);
-            calcularFFT(hum, window, array_re, array_im);
-            calcularFFT(gas, window, array_re, array_im);
-            calcularFFT(pres, window, array_re, array_im);
-            */
 
             // Enviar los datos al controlador
             bme_data_sender(data, top5, rms_temp, rms_pres, rms_hum, rms_gas, window);
 
             // Liberar memoria
+            deallocate_window_FFT(temp_fft);
+            deallocate_window_FFT(hum_fft);
+            deallocate_window_FFT(gas_fft);
+            deallocate_window_FFT(pres_fft);
             free(data);
             free(top5[0]);
             free(top5[1]);
             free(top5[2]);
             free(top5[3]);
             free(top5);
-            /*
-            free(array_re);
-            free(array_im);
-            free(temp);
-            free(hum);
-            free(gas);
-            free(pres);
-            */
+
             break;
         case 1:
             write_window_nvs(body);
