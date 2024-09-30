@@ -49,7 +49,7 @@ int32_t read_window_nvs() {
                 //printf("Ventana almacenada: %ld\n", window);
                 break;
             case ESP_ERR_NVS_NOT_FOUND:
-                int32_t window = 20;
+                window = 20;
                 //printf("La ventana no ha sido guardada todavia!\n");
                 break;
             default:
