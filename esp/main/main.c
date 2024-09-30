@@ -124,8 +124,8 @@ float **extraer_top_5(bme_data reads[], size_t n) {
 }
 
 // Function that Calculate Root Mean Square
-float rmsValue(int arr[], int n) {
-    int square = 0;
+float rmsValue(float arr[], float n) {
+    float square = 0;
     float mean = 0.0, root = 0.0;
 
     // Calculate square.
@@ -134,7 +134,7 @@ float rmsValue(int arr[], int n) {
     }
 
     // Calculate Mean.
-    mean = (square / (float)(n));
+    mean = (square / n);
 
     // Calculate Root.
     root = sqrt(mean);
@@ -142,12 +142,12 @@ float rmsValue(int arr[], int n) {
     return root;
 }
 
-void calcular_rms(bme_data readings[], size_t n, float *rms_temp, float *rms_pres, float *rms_hum, float *rms_gas) {
-    // Crear arreglos temporales para las temperaturas y presiones
-    int *temperaturas = (int *)malloc(n * sizeof(int));
-    int *presiones = (int *)malloc(n * sizeof(int));
-    int *humedades = (int *)malloc(n * sizeof(int));
-    int *gases = (int *)malloc(n * sizeof(int));
+void calcular_rms_y_fft(bme_data readings[], size_t n, float *rms_temp, float *rms_pres, float *rms_hum, float *rms_gas) {
+    // Crear arreglos temporales para las temperaturas, presiones, humedades y gases
+    float *temperaturas = (float *)malloc(n * sizeof(float));
+    float *presiones = (float *)malloc(n * sizeof(float));
+    float *humedades = (float *)malloc(n * sizeof(float));
+    float *gases = (float *)malloc(n * sizeof(float));
 
     if (temperaturas == NULL || presiones == NULL || humedades == NULL) {
         // printf("Error al asignar memoria para los cálculos RMS\n");
@@ -316,7 +316,7 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             unsigned long long window_float = (unsigned long long)window;
             uart_write_bytes(UART_NUM, (const char *)&window_float, sizeof(unsigned long long));
             vTaskDelay(pdMS_TO_TICKS(1000));
-            
+
             // printf("Ventana actual: %ld\n", window);
             //  Enviar ventana y calcular datos
             size_t n_reads;
@@ -336,13 +336,13 @@ void command_handler(uint8_t signal_type, uint32_t body) {
 
             // Calcular el RMS
             float rms_temp = 0.0, rms_pres = 0.0, rms_hum = 0.0, rms_gas = 0.0;
-            calcular_rms(data, n_reads, &rms_temp, &rms_pres, &rms_hum, &rms_gas);
+            calcular_rms_y_fft(data, n_reads, &rms_temp, &rms_pres, &rms_hum, &rms_gas);
             // printf("RMS Temperatura: %f\n", rms_temp);
             // printf("RMS Presion: %f\n", rms_pres);
             // printf("RMS Humedad: %f\n", rms_hum);
 
-            // Calcular FFT
-
+            // Calcular FFT (Si hay que pedir malloc denuevo, mejor combinar las tareas con la funcion de rms arriba)
+            /*
             float *array_re = malloc(sizeof(float) * window);
             float *array_im = malloc(sizeof(float) * window);
             float *temp = malloc(sizeof(float) * window);
@@ -354,6 +354,7 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             calcularFFT(hum, window, array_re, array_im);
             calcularFFT(gas, window, array_re, array_im);
             calcularFFT(pres, window, array_re, array_im);
+            */
 
             // Enviar los datos al controlador
             bme_data_sender(data, top5, rms_temp, rms_pres, rms_hum, rms_gas, window);
@@ -365,12 +366,14 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             free(top5[2]);
             free(top5[3]);
             free(top5);
+            /*
             free(array_re);
             free(array_im);
             free(temp);
             free(hum);
             free(gas);
             free(pres);
+            */
             break;
         case 1:
             write_window_nvs(body);
