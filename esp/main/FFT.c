@@ -1,4 +1,6 @@
 #include <math.h>
+#include <stddef.h>
+#include <stdio.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -13,6 +15,10 @@
  * @param array_im Direccion del arreglo donde se guardara la parte imaginaria. Debe ser de tamano size
  */
 void calcularFFT(float *array, int size, float *array_re, float *array_im) {
+    if (array == NULL) {
+        printf("ERROR | calcularFFT: array es NULL");
+        exit(1);
+    }
     for (int k = 0; k < size; k++) {
         float real = 0;
         float imag = 0;
