@@ -25,8 +25,8 @@ void calcularFFT(float *array, int size, float *array_re, float *array_im) {
 
         for (int n = 0; n < size; n++) {
             float angulo = 2 * M_PI * k * n / size;
-            float cos_angulo = cos(angulo);
-            float sin_angulo = -sin(angulo);
+            float cos_angulo = cosf(angulo);
+            float sin_angulo = -(sqrtf(1-(cos_angulo * cos_angulo))); //-sin(angulo);
 
             real += array[n] * cos_angulo;
             imag += array[n] * sin_angulo;
