@@ -1,4 +1,4 @@
-from Controller import Controller
+from controller import Controller
 import serial
 from dotenv import load_dotenv
 import os

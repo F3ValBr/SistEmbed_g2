@@ -2,8 +2,8 @@ import pytest
 import serial
 import struct
 
-from cliente.Controller import Controller
-from cliente.Controller import MissingWindowSizeError
+from cliente.controller import Controller
+from cliente.controller import MissingWindowSizeError
 
 # on which port should the tests be performed:
 PORT = 'loop://'
