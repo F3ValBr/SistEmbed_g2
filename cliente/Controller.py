@@ -170,20 +170,20 @@ class Controller:
                         print("Medidas RMS obtenidas")
                         break
         counter_fft = 0
-        temp_fft = []
-        pres_fft = []
-        hum_fft = []
-        gas_fft = []
+        self.temp_fft = []
+        self.pres_fft = []
+        self.hum_fft = []
+        self.gas_fft = []
         while True:
             if self.ser.in_waiting > 31:
                 try:
                     fft_data = self.receive_fft_pack()
                     self.window_data.append(fft_data)
                     # temp.re, temp.im, pres.re, pres.im, hum.re, hum.im, gas.re, gas.im
-                    temp_fft.append((fft_data[0], fft_data[1]))
-                    pres_fft.append((fft_data[2], fft_data[3]))
-                    hum_fft.append((fft_data[4], fft_data[5]))
-                    gas_fft.append((fft_data[6], fft_data[7]))
+                    self.temp_fft.append((fft_data[0], fft_data[1]))
+                    self.pres_fft.append((fft_data[2], fft_data[3]))
+                    self.hum_fft.append((fft_data[4], fft_data[5]))
+                    self.gas_fft.append((fft_data[6], fft_data[7]))
                 except Exception as e:
                     print(e)
                     continue
