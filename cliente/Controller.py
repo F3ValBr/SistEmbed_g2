@@ -20,6 +20,10 @@ class Controller:
     pres_rms = None
     hum_rms = None
     gas_rms = None
+    temp_fft = []
+    pres_fft = []
+    hum_fft = []
+    gas_fft = []
 
     def __init__(self, serial_port=None):
         self.window_size = 10
@@ -40,6 +44,11 @@ class Controller:
     def receive_bme_data(self):
         data = self.ser.read(16)
         data = unpack('ffff', data)
+        return data
+    
+    def receive_fft_pack(self):
+        data = self.ser.read(32)
+        data = unpack('8f', data)
         return data
     
     def receive_top(self):
@@ -160,6 +169,33 @@ class Controller:
                     if counter_rms == 1:
                         print("Medidas RMS obtenidas")
                         break
+        counter_fft = 0
+        temp_fft = []
+        pres_fft = []
+        hum_fft = []
+        gas_fft = []
+        while True:
+            if self.ser.in_waiting > 31:
+                try:
+                    fft_data = self.receive_fft_pack()
+                    self.window_data.append(fft_data)
+                    # temp.re, temp.im, pres.re, pres.im, hum.re, hum.im, gas.re, gas.im
+                    temp_fft.append((fft_data[0], fft_data[1]))
+                    pres_fft.append((fft_data[2], fft_data[3]))
+                    hum_fft.append((fft_data[4], fft_data[5]))
+                    gas_fft.append((fft_data[6], fft_data[7]))
+                except Exception as e:
+                    print(e)
+                    continue
+                else:
+                    counter_fft += 1
+                finally:
+                    if counter_fft == self.window_size:
+                        print("FFT obtenido")
+                        break
+
+
+            
 
         print("Datos obtenidos")
         print(self.window_data)
@@ -232,41 +268,66 @@ class Controller:
             gas_idx = np.where(data_gas == self.gas_top[i])
             gas_points.append((gas_idx, self.gas_top[i]))
 
-        fig, axs = plt.subplots(1, 4)
+        temp_fft_vals = [np.sqrt(x[0]**2 + x[1]**2) for x in self.temp_fft]
+        pres_fft_vals = [np.sqrt(x[0]**2 + x[1]**2) for x in self.pres_fft]
+        hum_fft_vals = [np.sqrt(x[0]**2 + x[1]**2) for x in self.hum_fft]
+        gas_fft_vals = [np.sqrt(x[0]**2 + x[1]**2) for x in self.gas_fft]
+        
+
+
+
+        fig, axs = plt.subplots(2, 4)
 
         fig.suptitle(f"Temperatura, Presion, Humedad y Gas (ventana: {self.window_size}")
 
-        axs[0].plot(data_temp)
-        axs[0].set_title(f"Temperatura (RMS = {self.temp_rms})")
-        axs[0].set_ylabel("Grados Celsius (°C)")
-        axs[0].set_ylim(0, 50)
+        axs[0, 0].plot(data_temp)
+        axs[0, 0].set_title(f"Temperatura (RMS = {self.temp_rms})")
+        axs[0, 0].set_ylabel("Grados Celsius (°C)")
+        axs[0, 0].set_ylim(0, 50)
 
         for value in temp_points:
-            axs[0].plot(value[0], value[1], 'ro')
+            axs[0, 0].plot(value[0], value[1], 'ro')
 
-        axs[1].plot(data_pres)
-        axs[1].set_title(f"Presion (RMS = {self.pres_rms})")
-        axs[1].set_ylabel("Pascales (Pa)")
-        axs[1].set_ylim(1000, 1500)
+        axs[0, 1].plot(data_pres)
+        axs[0, 1].set_title(f"Presion (RMS = {self.pres_rms})")
+        axs[0, 1].set_ylabel("Pascales (Pa)")
+        axs[0, 1].set_ylim(1000, 1500)
 
         for value in pres_points:
-            axs[1].plot(value[0], value[1], 'ro')
+            axs[0, 1].plot(value[0], value[1], 'ro')
 
-        axs[2].plot(data_hum)
-        axs[2].set_title(f"Humedad (RMS = {self.hum_rms})")
-        axs[2].set_ylabel("Porcentaje (%)")
-        axs[2].set_ylim(0, 100)
+        axs[0, 2].plot(data_hum)
+        axs[0, 2].set_title(f"Humedad (RMS = {self.hum_rms})")
+        axs[0, 2].set_ylabel("Porcentaje (%)")
+        axs[0, 2].set_ylim(0, 100)
 
         for value in hum_points:
-            axs[2].plot(value[0], value[1], 'ro')
+            axs[0, 2].plot(value[0], value[1], 'ro')
 
-        axs[3].plot(data_gas)
-        axs[3].set_title(f"Gas (RMS = {self.gas_rms})")
-        axs[3].set_ylabel("Ohmios (Ω)")
-        axs[3].set_ylim(0, 100)
+        axs[0, 3].plot(data_gas)
+        axs[0, 3].set_title(f"Gas (RMS = {self.gas_rms})")
+        axs[0, 3].set_ylabel("Ohmios (Ω)")
+        axs[0, 3].set_ylim(0, 100)
 
         for value in gas_points:
-            axs[3].plot(value[0], value[1], 'ro')
+            axs[0, 3].plot(value[0], value[1], 'ro')
+
+        axs[1, 0].plot(temp_fft_vals)
+        axs[1, 0].set_title("FFT Temperatura")
+        axs[1, 0].set_ylabel("Amplitud")
+
+        axs[1, 1].plot(pres_fft_vals)
+        axs[1, 1].set_title("FFT Presion")
+        axs[1, 1].set_ylabel("Amplitud")
+        
+        axs[1, 2].plot(hum_fft_vals)
+        axs[1, 2].set_title("FFT Humedad")
+        axs[1, 2].set_ylabel("Amplitud")
+
+        axs[1, 3].plot(gas_fft_vals)
+        axs[1, 3].set_title("FFT Gas")
+        axs[1, 3].set_ylabel("Amplitud")
+        
         
         plt.show()
 

@@ -270,7 +270,7 @@ int serial_write_0(const char *msg, int len) {
     return result;
 }
 
-void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pres, float rms_hum, float rms_gas, int32_t window) {
+void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pres, float rms_hum, float rms_gas, WindowFFT* fft_temp, WindowFFT* fft_pres, WindowFFT* fft_hum, WindowFFT* fft_gas, int32_t window) {
     // Inicializar la comunicación
     char dataResponse1[6];
     // printf("Beginning initialization... \n");
@@ -325,6 +325,20 @@ void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pre
     data_rms[3] = rms_gas;
     uart_write_bytes(UART_NUM, (const char *)data_rms, sizeof(float) * 4);
     vTaskDelay(pdMS_TO_TICKS(1000));
+
+    for (int i = 0; i < window; i++) {
+        float fft[8];
+        fft[0] = fft_temp->re_array[i];
+        fft[1] = fft_temp->im_array[i];
+        fft[2] = fft_pres->re_array[i];
+        fft[3] = fft_pres->im_array[i];
+        fft[4] = fft_hum->re_array[i];
+        fft[5] = fft_hum->im_array[i];
+        fft[6] = fft_gas->re_array[i];
+        fft[7] = fft_gas->im_array[i];
+        uart_write_bytes(UART_NUM, (const char *)fft, sizeof(float) * 8);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }
 
 int HAS_SENT_WINDOW_YET = 0;
@@ -371,7 +385,7 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             // printf("RMS Humedad: %f\n", rms_hum);
 
             // Enviar los datos al controlador
-            bme_data_sender(data, top5, rms_temp, rms_pres, rms_hum, rms_gas, window);
+            bme_data_sender(data, top5, rms_temp, rms_pres, rms_hum, rms_gas, &temp_fft, &pres_fft, &hum_fft, &gas_fft, window);
 
             // Liberar memoria
             deallocate_window_FFT(temp_fft);
