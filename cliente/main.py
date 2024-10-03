@@ -1,9 +1,14 @@
 from Controller import Controller
 import serial
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 
-PORT = '/dev/cu.usbserial-110'
+PORT = os.getenv('SERIAL_PORT')
 BAUD_RATE = 115200
+
 
 def main():
     serial_port = serial.Serial(PORT, BAUD_RATE, timeout=1)

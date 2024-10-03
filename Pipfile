@@ -7,6 +7,7 @@ name = "pypi"
 pyserial = "*"
 numpy = "*"
 matplotlib = "*"
+python-dotenv = "*"
 
 [dev-packages]
 pytest = "*"
