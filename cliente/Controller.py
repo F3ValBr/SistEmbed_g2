@@ -45,17 +45,17 @@ class Controller:
         data = self.ser.read(16)
         data = unpack('ffff', data)
         return data
-    
+
     def receive_fft_pack(self):
         data = self.ser.read(32)
         data = unpack('8f', data)
         return data
-    
+
     def receive_top(self):
         data = self.ser.read(20)
         data = unpack("5f", data)
         return data
-    
+
     def receive_rms(self):
         data = self.ser.read(12)
         data = unpack("fff", data)
@@ -89,7 +89,7 @@ class Controller:
 
         print("Recibiendo datos...")
         # enviar mensaje de inicio
-        message = pack('6s','BEGIN\0'.encode())
+        message = pack('6s', 'BEGIN\0'.encode())
         self.send_message(message)
 
         # recibir datos de la bme - mediciones
@@ -99,7 +99,7 @@ class Controller:
                 try:
                     obt_data = self.receive_bme_data()
                     print(obt_data)
-                    #self.window_data.append(obt_data)
+                    # self.window_data.append(obt_data)
                     # Verifica si el primer elemento (temperatura) es válido
                     temperatura = obt_data[0]  # Primer elemento de la tupla
                     if -50.0 <= temperatura <= 100.0 and abs(temperatura) > 0.001:
@@ -107,7 +107,7 @@ class Controller:
                     else:
                         print(f"Temperatura fuera de rango: {temperatura}")
                         counter -= 1
-                        #continue  # Si no es válida, no se agrega y sigue esperando
+                        # continue  # Si no es válida, no se agrega y sigue esperando
                 except Exception as e:
                     print(e)
                     continue
@@ -126,7 +126,7 @@ class Controller:
         print("Obteniendo medidas - Top 5")
         counter_measures = 0
         top5_array = []
-        
+
         while True:
             if self.ser.in_waiting > 19:
                 try:
@@ -144,7 +144,7 @@ class Controller:
                         print("Medidas del top 5 obtenidas")
                         self.window_data.append(top5_array)
                         break
-        
+
         print("Datos obtenidos")
         print(self.window_data)
         sleep(1)
@@ -194,9 +194,6 @@ class Controller:
                         print("FFT obtenido")
                         break
 
-
-            
-
         print("Datos obtenidos")
         print(self.window_data)
         sleep(1)
@@ -243,7 +240,7 @@ class Controller:
         self.pres_rms = data_rms[1]
         self.hum_rms = data_rms[2]
         self.gas_rms = data_rms[3]
-        
+
         data_array = np.array(data_bme)
         data_temp = data_array[:, 0]
         data_pres = data_array[:, 1]
@@ -258,7 +255,7 @@ class Controller:
         for i in range(5):
             temp_idx = np.where(data_temp == self.temp_top[i])
             temp_points.append((temp_idx, self.temp_top[i]))
-            
+
             pres_idx = np.where(data_pres == self.pres_top[i])
             pres_points.append((pres_idx, self.pres_top[i]))
 
@@ -272,13 +269,11 @@ class Controller:
         pres_fft_vals = [np.sqrt(x[0]**2 + x[1]**2) for x in self.pres_fft]
         hum_fft_vals = [np.sqrt(x[0]**2 + x[1]**2) for x in self.hum_fft]
         gas_fft_vals = [np.sqrt(x[0]**2 + x[1]**2) for x in self.gas_fft]
-        
-
-
 
         fig, axs = plt.subplots(2, 4)
 
-        fig.suptitle(f"Temperatura, Presion, Humedad y Gas (ventana: {self.window_size}")
+        fig.suptitle(
+            f"Temperatura, Presion, Humedad y Gas (ventana: {self.window_size}")
 
         axs[0, 0].plot(data_temp)
         axs[0, 0].set_title(f"Temperatura (RMS = {self.temp_rms})")
@@ -319,7 +314,7 @@ class Controller:
         axs[1, 1].plot(pres_fft_vals)
         axs[1, 1].set_title("FFT Presion")
         axs[1, 1].set_ylabel("Amplitud")
-        
+
         axs[1, 2].plot(hum_fft_vals)
         axs[1, 2].set_title("FFT Humedad")
         axs[1, 2].set_ylabel("Amplitud")
@@ -327,11 +322,5 @@ class Controller:
         axs[1, 3].plot(gas_fft_vals)
         axs[1, 3].set_title("FFT Gas")
         axs[1, 3].set_ylabel("Amplitud")
-        
-        
+
         plt.show()
-
-
-
-
-
