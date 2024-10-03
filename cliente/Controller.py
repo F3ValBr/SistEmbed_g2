@@ -4,12 +4,15 @@ from time import sleep
 import numpy as np
 import matplotlib.pyplot as plt
 
+# pylint: disable=broad-exception-caught, lost-exception
+
 
 class MissingWindowSizeError(Exception):
     pass
 
 
 class Controller:
+    """Clase que agrupa métodos para el flujo de datos."""
     running = True
     window_data = []
     temp_top = None
@@ -180,7 +183,6 @@ class Controller:
                 try:
                     fft_data = self.receive_fft_pack()
                     self.window_data.append(fft_data)
-                    # temp.re, temp.im, pres.re, pres.im, hum.re, hum.im, gas.re, gas.im
                     self.temp_fft.append((fft_data[0], fft_data[1]))
                     self.pres_fft.append((fft_data[2], fft_data[3]))
                     self.hum_fft.append((fft_data[4], fft_data[5]))
