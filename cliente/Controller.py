@@ -43,12 +43,12 @@ class Controller:
 
     def receive_bme_data(self):
         data = self.ser.read(16)
-        data = unpack('ffff', data)
+        data = unpack("ffff", data)
         return data
 
     def receive_fft_pack(self):
         data = self.ser.read(32)
-        data = unpack('8f', data)
+        data = unpack("8f", data)
         return data
 
     def receive_top(self):
@@ -69,7 +69,7 @@ class Controller:
             if self.ser.in_waiting > 7:
                 try:
                     win_response = self.ser.read(8)
-                    win_response = unpack('Q', win_response)[0]
+                    win_response = unpack("Q", win_response)[0]
                 except Exception as e:
                     print(e)
                     continue
@@ -89,7 +89,7 @@ class Controller:
 
         print("Recibiendo datos...")
         # enviar mensaje de inicio
-        message = pack('6s', 'BEGIN\0'.encode())
+        message = pack("6s", "BEGIN\0".encode())
         self.send_message(message)
 
         # recibir datos de la bme - mediciones
@@ -102,12 +102,13 @@ class Controller:
                     # self.window_data.append(obt_data)
                     # Verifica si el primer elemento (temperatura) es válido
                     temperatura = obt_data[0]  # Primer elemento de la tupla
-                    if -50.0 <= temperatura <= 100.0 and abs(temperatura) > 0.001:
+                    if (-50.0 <= temperatura <= 100.0 and
+                            abs(temperatura) > 0.001):
                         self.window_data.append(obt_data)
                     else:
+                        # Si no es válida, no se agrega y sigue esperando
                         print(f"Temperatura fuera de rango: {temperatura}")
                         counter -= 1
-                        # continue  # Si no es válida, no se agrega y sigue esperando
                 except Exception as e:
                     print(e)
                     continue
@@ -225,8 +226,8 @@ class Controller:
         if body is None:
             if signal_type == 1:
                 raise MissingWindowSizeError()
-            return signal_type.to_bytes(1, 'little')
-        return signal_type.to_bytes(1, 'little') + body.to_bytes(4, 'little')
+            return signal_type.to_bytes(1, "little")
+        return signal_type.to_bytes(1, "little") + body.to_bytes(4, "little")
 
     def plot_window(self):
         data_bme = self.window_data[0:self.window_size]
@@ -273,7 +274,8 @@ class Controller:
         fig, axs = plt.subplots(2, 4)
 
         fig.suptitle(
-            f"Temperatura, Presion, Humedad y Gas (ventana: {self.window_size}")
+            "Temperatura, Presion, Humedad y Gas" +
+            f"(ventana: {self.window_size}")
 
         axs[0, 0].plot(data_temp)
         axs[0, 0].set_title(f"Temperatura (RMS = {self.temp_rms})")
@@ -281,7 +283,7 @@ class Controller:
         axs[0, 0].set_ylim(0, 50)
 
         for value in temp_points:
-            axs[0, 0].plot(value[0], value[1], 'ro')
+            axs[0, 0].plot(value[0], value[1], "ro")
 
         axs[0, 1].plot(data_pres)
         axs[0, 1].set_title(f"Presion (RMS = {self.pres_rms})")
@@ -289,7 +291,7 @@ class Controller:
         axs[0, 1].set_ylim(1000, 1500)
 
         for value in pres_points:
-            axs[0, 1].plot(value[0], value[1], 'ro')
+            axs[0, 1].plot(value[0], value[1], "ro")
 
         axs[0, 2].plot(data_hum)
         axs[0, 2].set_title(f"Humedad (RMS = {self.hum_rms})")
@@ -297,7 +299,7 @@ class Controller:
         axs[0, 2].set_ylim(0, 100)
 
         for value in hum_points:
-            axs[0, 2].plot(value[0], value[1], 'ro')
+            axs[0, 2].plot(value[0], value[1], "ro")
 
         axs[0, 3].plot(data_gas)
         axs[0, 3].set_title(f"Gas (RMS = {self.gas_rms})")
@@ -305,7 +307,7 @@ class Controller:
         axs[0, 3].set_ylim(0, 100)
 
         for value in gas_points:
-            axs[0, 3].plot(value[0], value[1], 'ro')
+            axs[0, 3].plot(value[0], value[1], "ro")
 
         axs[1, 0].plot(temp_fft_vals)
         axs[1, 0].set_title("FFT Temperatura")
