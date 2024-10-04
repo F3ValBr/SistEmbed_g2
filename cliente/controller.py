@@ -182,7 +182,7 @@ class Controller:
             if self.ser.in_waiting > 31:
                 try:
                     fft_data = self.receive_fft_pack()
-                    self.window_data.append(fft_data)
+                    # self.window_data.append(fft_data)
                     self.temp_fft.append((fft_data[0], fft_data[1]))
                     self.pres_fft.append((fft_data[2], fft_data[3]))
                     self.hum_fft.append((fft_data[4], fft_data[5]))
