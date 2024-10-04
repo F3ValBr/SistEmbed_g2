@@ -1,6 +1,8 @@
 #pragma once
 #include "embebidos/bme.h"
 
+#define REDIRECT_LOGS 1  // if redirect ESP log to another UART
+
 typedef struct WindowFFT {
     float *re_array;
     float *im_array;

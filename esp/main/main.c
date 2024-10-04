@@ -6,12 +6,12 @@
 #include <string.h>
 #include <time.h>
 
-#include "driver/i2c.h"
 #include "driver/uart.h"
 #include "embebidos/FFT.h"
 #include "embebidos/THCP_monitor.h"
 #include "embebidos/bme.h"
 #include "embebidos/nvs_embebidos.h"
+#include "embebidos/uart.h"
 #include "esp_log.h"
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
@@ -20,26 +20,6 @@
 #include "sdkconfig.h"
 
 #define CONCAT_BYTES(msb, lsb) (((uint16_t)msb << 8) | (uint16_t)lsb)
-
-#define BUF_SIZE (128)       // buffer size
-#define TXD_PIN 1            // UART TX pin
-#define RXD_PIN 3            // UART RX pin
-#define UART_NUM UART_NUM_0  // UART port number
-#define BAUD_RATE 115200     // Baud rate
-#define M_PI 3.14159265358979323846
-
-#define I2C_MASTER_SCL_IO GPIO_NUM_22  // GPIO pin
-#define I2C_MASTER_SDA_IO GPIO_NUM_21  // GPIO pin
-#define I2C_MASTER_FREQ_HZ 10000
-#define BME_ESP_SLAVE_ADDR 0x76
-#define WRITE_BIT 0x0
-#define READ_BIT 0x1
-#define ACK_CHECK_EN 0x0
-#define EXAMPLE_I2C_ACK_CHECK_DIS 0x0
-#define ACK_VAL 0x0
-#define NACK_VAL 0x1
-
-#define REDIRECT_LOGS 1  // if redirect ESP log to another UART
 
 // Función para extraer los 5 mayores números por presion, temperatura, humedad
 float **extraer_top_5(bme_data reads[], size_t n) {
@@ -220,57 +200,7 @@ void calcula_metricas(
     calcularFFT(presiones, n, pres_fft->re_array, pres_fft->im_array);
 }
 
-// Function for sending things to UART1
-static int uart1_printf(const char *str, va_list ap) {
-    char *buf;
-    vasprintf(&buf, str, ap);
-    uart_write_bytes(UART_NUM_1, buf, strlen(buf));
-    free(buf);
-    return 0;
-}
-
-// Setup of UART connections 0 and 1, and try to redirect logs to UART1 if asked
-static void uart_setup() {
-    uart_config_t uart_config = {
-        .baud_rate = 115200,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-    };
-
-    uart_param_config(UART_NUM_0, &uart_config);
-    uart_param_config(UART_NUM_1, &uart_config);
-    uart_driver_install(UART_NUM_0, BUF_SIZE * 2, 0, 0, NULL, 0);
-    uart_driver_install(UART_NUM_1, BUF_SIZE * 2, 0, 0, NULL, 0);
-
-    // Redirect ESP log to UART1
-    if (REDIRECT_LOGS) {
-        esp_log_set_vprintf(uart1_printf);
-    }
-}
-
-// Read UART_num for input with timeout of 1 sec
-int serial_read(char *buffer, int size) {
-    int len = uart_read_bytes(UART_NUM, (uint8_t *)buffer, size, pdMS_TO_TICKS(1000));
-    return len;
-}
-
-// Write message through UART_num with an \0 at the end
-int serial_write_0(const char *msg, int len) {
-    char *send_with_end = (char *)malloc(sizeof(char) * (len + 1));
-    memcpy(send_with_end, msg, len);
-    send_with_end[len] = '\0';
-
-    int result = uart_write_bytes(UART_NUM, send_with_end, len + 1);
-
-    free(send_with_end);
-
-    vTaskDelay(pdMS_TO_TICKS(1000));  // Delay for 1 second
-    return result;
-}
-
-void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pres, float rms_hum, float rms_gas, WindowFFT* fft_temp, WindowFFT* fft_pres, WindowFFT* fft_hum, WindowFFT* fft_gas, int32_t window) {
+void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pres, float rms_hum, float rms_gas, WindowFFT *fft_temp, WindowFFT *fft_pres, WindowFFT *fft_hum, WindowFFT *fft_gas, int32_t window) {
     // Inicializar la comunicación
     char dataResponse1[6];
     // printf("Beginning initialization... \n");
