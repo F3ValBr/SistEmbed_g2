@@ -8,6 +8,7 @@ pyserial = "*"
 numpy = "*"
 matplotlib = "*"
 python-dotenv = "*"
+pyqt5 = {version = "*", sys_platform = "== 'linux'"}
 
 [dev-packages]
 pytest = "*"
