@@ -336,6 +336,8 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             break;
         case 2:
             // printf("Cerrando comunicación\n");
+            // uart_wait_tx_done(UART_NUM)
+            uart_flush(UART_NUM);
             esp_restart();
             break;
         default:
@@ -355,6 +357,7 @@ void app_main(void) {
     bme_forced_mode();
 
     char signal_buffer[5];
+    uart_flush(UART_NUM);
 
     while (true) {
         // Espera señal
