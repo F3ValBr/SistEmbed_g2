@@ -1,6 +1,6 @@
 #pragma once
 #include "embebidos/bme.h"
-
+#include "embebidos/bmi.h"
 #define REDIRECT_LOGS 1  // if redirect ESP log to another UART
 
 typedef struct WindowFFT {
@@ -22,3 +22,12 @@ void deallocate_window_FFT(WindowFFT target_window);
  * @param window_size Tamaño de arreglo.
  */
 void fill_THCP_arrays(float *temp, float *hum, float *gas, float *pres, bme_data *data, int window_size);
+
+void fill_bmi_arrays(
+    float *acc_x,
+    float *acc_y,
+    float *acc_z,
+    float *gyro_x,
+    float *gyro_y,
+    float *gyro_z,
+    bmi_data *data, int window_size);

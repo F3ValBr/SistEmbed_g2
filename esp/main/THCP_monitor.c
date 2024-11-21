@@ -30,3 +30,21 @@ void fill_THCP_arrays(float *temp, float *hum, float *gas, float *pres, bme_data
         pres[i] = data[i].presure;
     }
 }
+
+void fill_bmi_arrays(
+    float *acc_x,
+    float *acc_y,
+    float *acc_z,
+    float *gyro_x,
+    float *gyro_y,
+    float *gyro_z,
+    bmi_data *data, int window_size) {
+    for (int i = 0; i < window_size; i++) {
+        acc_x[i] = data[i].acc_x;
+        acc_y[i] = data[i].acc_y;
+        acc_z[i] = data[i].acc_z;
+        gyro_x[i] = data[i].gyro_x;
+        gyro_y[i] = data[i].gyro_y;
+        gyro_z[i] = data[i].gyro_z;
+    }
+}
