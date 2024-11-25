@@ -12,33 +12,27 @@ void deallocate_window_FFT(WindowFFT target_window) {
     free(target_window.im_array);
 }
 
-// /**
-//  * @brief Separa valores leídos según dato.
-//  *
-//  * @param temp Arreglo de temperaturas a llenar.
-//  * @param hum Arreglo de humedades a llenar.
-//  * @param gas Arreglo de gas a llenar.
-//  * @param pres Arreglo de presión a llenar.
-//  * @param data Arreglo de origen con datos agrupados.
-//  * @param window_size Tamaño de arreglo.
-//  */
-// void fill_THCP_arrays(float *temp, float *hum, float *gas, float *pres, bme_data *data, int window_size) {
-//     for (int i = 0; i < window_size; i++) {
-//         temp[i] = data[i].temperature;
-//         hum[i] = data[i].humidity;
-//         gas[i] = data[i].gas_resistance;
-//         pres[i] = data[i].presure;
-//     }
-// }
-
-void fill_bmi_arrays(
-    float *acc_x,
-    float *acc_y,
-    float *acc_z,
-    float *gyro_x,
-    float *gyro_y,
-    float *gyro_z,
-    bmi_data *data, int window_size) {
+/**
+ * @brief Separa valores leídos según dato.
+ *
+ * @param acc_x Arreglo de aceleraciones en x a llenar.
+ * @param acc_y Arreglo de aceleraciones en y a llenar.
+ * @param acc_z Arreglo de aceleraciones en z a llenar.
+ * @param gyro_x Arreglo de velocidades angulares en x a llenar.
+ * @param gyro_y Arreglo de velocidades angulares en y a llenar.
+ * @param gyro_z Arreglo de velocidades angulares en z a llenar.
+ * @param data Arreglo de origen con datos agrupados.
+ * @param window_size Tamaño de arreglo.
+ * @return void
+ */
+void fill_bmi_arrays(float *acc_x,
+                        float *acc_y,
+                        float *acc_z,
+                        float *gyro_x,
+                        float *gyro_y,
+                        float *gyro_z,
+                        bmi_data *data, 
+                        int window_size) {
     for (int i = 0; i < window_size; i++) {
         acc_x[i] = data[i].acc_x;
         acc_y[i] = data[i].acc_y;

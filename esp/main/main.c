@@ -28,7 +28,7 @@ float **bmi_extraer_top_5(bmi_data reads[], size_t n) {
     // Reservar memoria para el arreglo que contendrá los 5 mayores números
     float **top5 = (float **)malloc(6 * sizeof(float *));
     if (top5 == NULL) {
-        // printf("Error al asignar memoria\n");
+        printf("Error al asignar memoria\n");
         return NULL;
     }
 
@@ -46,7 +46,7 @@ float **bmi_extraer_top_5(bmi_data reads[], size_t n) {
         top5[3] == NULL ||
         top5[4] == NULL ||
         top5[5] == NULL) {
-        // printf("Error al asignar memoria\n");
+        printf("Error al asignar memoria\n");
         free(top5[0]);
         free(top5[1]);
         free(top5[2]);
@@ -159,42 +159,34 @@ float rmsValue(float arr[], float n) {
     return root;
 }
 
-void bmi_calcula_metricas(
-    bmi_data readings[], size_t n,
-    float *rms_acc_x,
-    float *rms_acc_y,
-    float *rms_acc_z,
-    float *rms_gyro_x,
-    float *rms_gyro_y,
-    float *rms_gyro_z,
-    WindowFFT *acc_x_fft,
-    WindowFFT *acc_y_fft,
-    WindowFFT *acc_z_fft,
-    WindowFFT *gyro_x_fft,
-    WindowFFT *gyro_y_fft,
-    WindowFFT *gyro_z_fft) {
+void bmi_calcula_metricas(bmi_data readings[], size_t n,
+                            float *rms_acc_x,
+                            float *rms_acc_y,
+                            float *rms_acc_z,
+                            float *rms_gyro_x,
+                            float *rms_gyro_y,
+                            float *rms_gyro_z,
+                            WindowFFT *acc_x_fft,
+                            WindowFFT *acc_y_fft,
+                            WindowFFT *acc_z_fft,
+                            WindowFFT *gyro_x_fft,
+                            WindowFFT *gyro_y_fft,
+                            WindowFFT *gyro_z_fft) {
+
     // Crea arreglos temporales para desempaquetar gyro y accelerometro.
-    // float temperaturas[n];
-    // float presiones[n];
-    // float humedades[n];
-    // float gases[n];
     float acc_x_samples[n];
     float acc_y_samples[n];
     float acc_z_samples[n];
     float gyro_x_samples[n];
     float gyro_y_samples[n];
     float gyro_z_samples[n];
-    // fill_THCP_arrays(temperaturas, humedades, gases, presiones, readings, n);
+    
     fill_bmi_arrays(
         acc_x_samples, acc_y_samples, acc_z_samples,
         gyro_x_samples, gyro_y_samples, gyro_z_samples,
         readings, n);
 
-    // Calcula el RMS para ventana de cada magnitud física.
-    // *rms_temp = rmsValue(temperaturas, n);
-    // *rms_pres = rmsValue(presiones, n);
-    // *rms_hum = rmsValue(humedades, n);
-    // *rms_gas = rmsValue(gases, n);
+    // Calcula el RMS para ventana de cada coordenada registrada.
     *rms_acc_x = rmsValue(acc_x_samples, n);
     *rms_acc_y = rmsValue(acc_y_samples, n);
     *rms_acc_z = rmsValue(acc_z_samples, n);
@@ -202,11 +194,7 @@ void bmi_calcula_metricas(
     *rms_gyro_y = rmsValue(gyro_y_samples, n);
     *rms_gyro_z = rmsValue(gyro_z_samples, n);
 
-    // Calcula FFT para la ventana de cada magnitud física.
-    // calcularFFT(temperaturas, n, temp_fft->re_array, temp_fft->im_array);
-    // calcularFFT(humedades, n, hum_fft->re_array, hum_fft->im_array);
-    // calcularFFT(gases, n, gas_fft->re_array, gas_fft->im_array);
-    // calcularFFT(presiones, n, pres_fft->re_array, pres_fft->im_array);
+    // Calcula FFT para la ventana de cada coordenada registrada.
     calcularFFT(acc_x_samples, n, acc_x_fft->re_array, acc_x_fft->im_array);
     calcularFFT(acc_y_samples, n, acc_y_fft->re_array, acc_y_fft->im_array);
     calcularFFT(acc_z_samples, n, acc_z_fft->re_array, acc_z_fft->im_array);
@@ -244,10 +232,12 @@ void bmi_data_sender(
         data_point[4] = data[i].gyro_y;
         data_point[5] = data[i].gyro_z;
 
-        // printf("Temperatura: %f\n", data_point[0]);
-        // printf("Presion: %f\n", data_point[1]);
-        // printf("Humedad: %f\n", data_point[2]);
-        // printf("Gas: %f\n", data_point[3]);
+        // printf("Aceleración en x: %f\n", data_point[0]);
+        // printf("Aceleración en y: %f\n", data_point[1]);
+        // printf("Aceleración en z: %f\n", data_point[2]);
+        // printf("Velocidad angular en x: %f\n", data_point[3]);
+        // printf("Velocidad angular en y: %f\n", data_point[4]);
+        // printf("Velocidad angular en z: %f\n", data_point[5]);
 
         uart_write_bytes(UART_NUM, (const char *)data_point, sizeof(float) * 6);
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -315,7 +305,6 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             // printf("Ventana actual: %ld\n", window);
             //  Enviar ventana y calcular datos
             size_t n_reads;
-            // bme_data *data = bme_read_data(window, &n_reads);
             bmi_data *data = bmi_read_data(window, &n_reads);
             if (data == NULL) {
                 printf("Error al leer datos\n");
@@ -323,7 +312,6 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             }
 
             // Extraer los 5 mayores valores
-            // TODO: reescribir extraer_top_5 para bmi_data
             float **top5 = bmi_extraer_top_5(data, n_reads);
             if (top5 == NULL) {
                 printf("Error al extraer los 5 mayores valores\n");
@@ -332,17 +320,7 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             }
 
             // Inicializa variables que almacenan métricas.
-            // float rms_temp = 0.0, rms_pres = 0.0, rms_hum = 0.0, rms_gas = 0.0;
-            // WindowFFT temp_fft = allocate_window_FFT(n_reads);
-            // WindowFFT hum_fft = allocate_window_FFT(n_reads);
-            // WindowFFT gas_fft = allocate_window_FFT(n_reads);
-            // WindowFFT pres_fft = allocate_window_FFT(n_reads);
-            float rms_acc_x = 0.0;
-            float rms_acc_y = 0.0;
-            float rms_acc_z = 0.0;
-            float rms_gyro_x = 0.0;
-            float rms_gyro_y = 0.0;
-            float rms_gyro_z = 0.0;
+            float rms_acc_x = 0.0, rms_acc_y = 0.0, rms_acc_z = 0.0, rms_gyro_x = 0.0, rms_gyro_y = 0.0, rms_gyro_z = 0.0;
             WindowFFT acc_x_fft = allocate_window_FFT(n_reads);
             WindowFFT acc_y_fft = allocate_window_FFT(n_reads);
             WindowFFT acc_z_fft = allocate_window_FFT(n_reads);
@@ -351,28 +329,17 @@ void command_handler(uint8_t signal_type, uint32_t body) {
             WindowFFT gyro_z_fft = allocate_window_FFT(n_reads);
 
             // TODO: ajustar calcula metricas a bmi
-            // calcula_metricas(data, n_reads,
-            //                  &rms_temp, &rms_hum, &rms_gas, &rms_pres,
-            //                  &temp_fft, &hum_fft, &gas_fft, &pres_fft);
             bmi_calcula_metricas(data, n_reads,
                                  &rms_acc_x, &rms_acc_y, &rms_acc_z, &rms_gyro_x, &rms_gyro_y, &rms_gyro_z,
                                  &acc_x_fft, &acc_y_fft, &acc_z_fft, &gyro_x_fft, &gyro_y_fft, &gyro_z_fft);
-            // printf("RMS Temperatura: %f\n", rms_temp);
-            // printf("RMS Presion: %f\n", rms_pres);
-            // printf("RMS Humedad: %f\n", rms_hum);
 
             // Enviar los datos al controlador
-            // bme_data_sender(data, top5, rms_temp, rms_pres, rms_hum, rms_gas, &temp_fft, &pres_fft, &hum_fft, &gas_fft, window);
             bmi_data_sender(data, top5,
                             rms_acc_x, rms_acc_y, rms_acc_z, rms_gyro_x, rms_gyro_y, rms_gyro_z,
                             &acc_x_fft, &acc_y_fft, &acc_z_fft, &gyro_x_fft, &gyro_y_fft, &gyro_z_fft,
                             window);
 
             // Liberar memoria
-            // deallocate_window_FFT(temp_fft);
-            // deallocate_window_FFT(hum_fft);
-            // deallocate_window_FFT(gas_fft);
-            // deallocate_window_FFT(pres_fft);
             deallocate_window_FFT(acc_x_fft);
             deallocate_window_FFT(acc_y_fft);
             deallocate_window_FFT(acc_z_fft);
@@ -409,11 +376,7 @@ void app_main(void) {
     uart_setup();    // Uart setup
     srand(time(0));  // Initialize random seed
     init_nvs();      // Inicializar NVS
-    // ESP_ERROR_CHECK(sensor_init());
-    // bme_get_chipid();
-    // bme_softreset();
-    // bme_get_mode();
-    // bme_forced_mode();
+    // Inicializar BMI
     ESP_ERROR_CHECK(bmi_init());
     bmi_softreset();
     bmi_get_chipid();

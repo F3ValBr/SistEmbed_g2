@@ -563,24 +563,6 @@ void bmi_softreset(void) {
     }
 }
 
-/*
-void bmi_powermode(void) {
-    uint8_t reg_pwr_conf = 0x7C, reg_pwr_ctrl = 0x7D;
-    uint8_t tmp, tmp2;
-
-    ret = bmi_read(&reg_pwr_conf, &tmp, 1);
-    printf("Valor de PWR_CONF: %2X \n", tmp);
-    if (ret != ESP_OK) {
-        printf("Error en PWR_CONF: %s \n", esp_err_to_name(ret));
-    }
-
-    ret2 = bmi_read(&reg_pwr_ctrl, &tmp2, 1);
-    printf("Valor de PWR_CTRL: %2X \n", tmp2);
-    if (ret2 != ESP_OK) {
-        printf("Error en PWR_CTRL: %s \n", esp_err_to_name(ret2));
-    }
-}*/
-
 void bmi_initialization(void) {
     uint8_t reg_pwr_conf_advpowersave = 0x7C, val_pwr_conf_advpowersave = 0x00;
     uint8_t reg_init_ctrl = 0x59, val_init_ctrl = 0x00, val_init_ctrl2 = 0x01;
@@ -643,92 +625,6 @@ void bmi_internal_status(void) {
     // printf("Initial status: %x \n",(tmp & 0b00001111));
     printf("Internal Status: %2X\n\n", tmp);
 }
-/*
-void lectura(void) {
-    uint8_t reg_intstatus = 0x03, tmp;
-    // uint8_t addr_acc_z_lsb = 0x10;
-    // uint8_t addr_acc_z_msb = 0x11;
-    // uint16_t acc_z;
-
-    uint8_t addr_acc_x_lsb = 0x0C;
-    uint8_t addr_acc_x_msb = 0x0D;
-    uint16_t acc_x;
-    uint8_t addr_acc_y_lsb = 0x0E;
-    uint8_t addr_acc_y_msb = 0x0F;
-    uint16_t acc_y;
-    uint8_t addr_acc_z_lsb = 0x10;
-    uint8_t addr_acc_z_msb = 0x11;
-    uint16_t acc_z;
-
-    uint8_t addr_gyr_x_lsb = 0x12;
-    uint8_t addr_gyr_x_msb = 0x13;
-    uint16_t gyr_x;
-    uint8_t addr_gyr_y_lsb = 0x14;
-    uint8_t addr_gyr_y_msb = 0x15;
-    uint16_t gyr_y;
-    uint8_t addr_gyr_z_lsb = 0x16;
-    uint8_t addr_gyr_z_msb = 0x17;
-    uint16_t gyr_z;
-
-    while (1) {
-        bmi_read(&reg_intstatus, &tmp, 1);
-        if ((tmp & 0b10000000) == 0x80) {
-            // Lectura acc_x
-            ret = bmi_read(&addr_acc_x_msb, &tmp, 1);
-            acc_x = tmp;
-            ret = bmi_read(&addr_acc_x_lsb, &tmp, 1);
-            acc_x = (acc_x << 8) | tmp;
-
-            printf("acc_x: %f g\n", (int16_t)acc_x * (8.000 / 32768));
-
-            // Lectura acc_y
-            ret = bmi_read(&addr_acc_y_msb, &tmp, 1);
-            acc_y = tmp;
-            ret = bmi_read(&addr_acc_y_lsb, &tmp, 1);
-            acc_y = (acc_y << 8) | tmp;
-
-            printf("acc_y: %f g\n", (int16_t)acc_y * (8.000 / 32768));
-
-            // Lectura acc_z
-            ret = bmi_read(&addr_acc_z_msb, &tmp, 1);
-            acc_z = tmp;
-            ret = bmi_read(&addr_acc_z_lsb, &tmp, 1);
-            acc_z = (acc_z << 8) | tmp;
-
-            printf("acc_z: %f g\n", (int16_t)acc_z * (8.000 / 32768));
-
-            // Lectura gyr_x
-            ret = bmi_read(&addr_gyr_x_msb, &tmp, 1);
-            gyr_x = tmp;
-            ret = bmi_read(&addr_gyr_x_lsb, &tmp, 1);
-            gyr_x = (gyr_x << 8) | tmp;
-
-            printf("gyr_x: %f dps\n", (int16_t)gyr_x * (2000.000 / 32768));
-
-            // Lectura gyr_y
-            ret = bmi_read(&addr_gyr_y_msb, &tmp, 1);
-            gyr_y = tmp;
-            ret = bmi_read(&addr_gyr_y_lsb, &tmp, 1);
-            gyr_y = (gyr_y << 8) | tmp;
-
-            printf("gyr_y: %f dps\n", (int16_t)gyr_y * (2000.000 / 32768));
-
-            // Lectura gyr_z
-            ret = bmi_read(&addr_gyr_z_msb, &tmp, 1);
-            gyr_z = tmp;
-            ret = bmi_read(&addr_gyr_z_lsb, &tmp, 1);
-            gyr_z = (gyr_z << 8) | tmp;
-
-            printf("gyr_z: %f dps\n\n", (int16_t)gyr_z * (2000.000 / 32768));
-
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-            if (ret != ESP_OK) {
-                printf("Error lectura: %s \n", esp_err_to_name(ret));
-            }
-        }
-    }
-}*/
 
 bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
     // Inicializacion de variables
@@ -773,8 +669,12 @@ bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
             ret = bmi_read(&addr_acc_x_lsb, &tmp, 1);
             acc_x = (acc_x << 8) | tmp;
 
+            if (ret != ESP_OK) {
+                printf("Error lectura: %s \n", esp_err_to_name(ret));
+            }
+
             // printf("acc_x: %f g\n", (int16_t)acc_x * (8.000 / 32768));
-            float acc_x_tmp = acc_x * (8.000 / 32768);
+            float acc_x_tmp = (int16_t)acc_x * (8.000 / 32768);
 
             // Lectura acc_y
             ret = bmi_read(&addr_acc_y_msb, &tmp, 1);
@@ -782,8 +682,12 @@ bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
             ret = bmi_read(&addr_acc_y_lsb, &tmp, 1);
             acc_y = (acc_y << 8) | tmp;
 
+            if (ret != ESP_OK) {
+                printf("Error lectura: %s \n", esp_err_to_name(ret));
+            }
+
             // printf("acc_y: %f g\n", (int16_t)acc_y * (8.000 / 32768));
-            float acc_y_tmp = acc_y * (8.000 / 32768);
+            float acc_y_tmp = (int16_t)acc_y * (8.000 / 32768);
 
             // Lectura acc_z
             ret = bmi_read(&addr_acc_z_msb, &tmp, 1);
@@ -791,8 +695,12 @@ bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
             ret = bmi_read(&addr_acc_z_lsb, &tmp, 1);
             acc_z = (acc_z << 8) | tmp;
 
+            if (ret != ESP_OK) {
+                printf("Error lectura: %s \n", esp_err_to_name(ret));
+            }
+
             // printf("acc_z: %f g\n", (int16_t)acc_z * (8.000 / 32768));
-            float acc_z_tmp = acc_z * (8.000 / 32768);
+            float acc_z_tmp = (int16_t)acc_z * (8.000 / 32768);
 
             // Lectura gyr_x
             ret = bmi_read(&addr_gyr_x_msb, &tmp, 1);
@@ -800,8 +708,12 @@ bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
             ret = bmi_read(&addr_gyr_x_lsb, &tmp, 1);
             gyr_x = (gyr_x << 8) | tmp;
 
+            if (ret != ESP_OK) {
+                printf("Error lectura: %s \n", esp_err_to_name(ret));
+            }
+
             // printf("gyr_x: %f dps\n", (int16_t)gyr_x * (2000.000 / 32768));
-            float gyr_x_tmp = gyr_x * (2000.000 / 32768);
+            float gyr_x_tmp = (int16_t)gyr_x * (2000.000 / 32768);
 
             // Lectura gyr_y
             ret = bmi_read(&addr_gyr_y_msb, &tmp, 1);
@@ -809,8 +721,12 @@ bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
             ret = bmi_read(&addr_gyr_y_lsb, &tmp, 1);
             gyr_y = (gyr_y << 8) | tmp;
 
+            if (ret != ESP_OK) {
+                printf("Error lectura: %s \n", esp_err_to_name(ret));
+            }
+
             // printf("gyr_y: %f dps\n", (int16_t)gyr_y * (2000.000 / 32768));
-            float gyr_y_tmp = gyr_y * (2000.000 / 32768);
+            float gyr_y_tmp = (int16_t)gyr_y * (2000.000 / 32768);
 
             // Lectura gyr_z
             ret = bmi_read(&addr_gyr_z_msb, &tmp, 1);
@@ -818,12 +734,12 @@ bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
             ret = bmi_read(&addr_gyr_z_lsb, &tmp, 1);
             gyr_z = (gyr_z << 8) | tmp;
 
-            // printf("gyr_z: %f dps\n\n", (int16_t)gyr_z * (2000.000 / 32768));
-            float gyr_z_tmp = gyr_z * (2000.000 / 32768);
-
             if (ret != ESP_OK) {
                 printf("Error lectura: %s \n", esp_err_to_name(ret));
             }
+
+            // printf("gyr_z: %f dps\n\n", (int16_t)gyr_z * (2000.000 / 32768));
+            float gyr_z_tmp = (int16_t)gyr_z * (2000.000 / 32768);
 
             // vTaskDelay(1000 / portTICK_PERIOD_MS);
             //  Almacenamiento de los datos
