@@ -6,104 +6,23 @@
 #include <string.h>
 #include <time.h>
 
-#include "driver/uart.h"
+// #include "driver/uart.h"
 #include "embebidos/FFT.h"
-#include "embebidos/THCP_monitor.h"
-#include "embebidos/bme.h"
+// #include "embebidos/THCP_monitor.h"
+// // #include "embebidos/bme.h"
 #include "embebidos/bmi.h"
 #include "embebidos/nvs_embebidos.h"
 #include "embebidos/uart.h"
 #include "esp_log.h"
 #include "esp_system.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+// #include "freertos/FreeRTOS.h"
+// #include "freertos/task.h"
 #include "math.h"
 #include "sdkconfig.h"
 
 #define CONCAT_BYTES(msb, lsb) (((uint16_t)msb << 8) | (uint16_t)lsb)
 
 // Función para extraer los 5 mayores números por presion, temperatura, humedad
-float **extraer_top_5(bme_data reads[], size_t n) {
-    // Reservar memoria para el arreglo que contendrá los 5 mayores números
-    float **top5 = (float **)malloc(4 * sizeof(float *));
-    if (top5 == NULL) {
-        // printf("Error al asignar memoria\n");
-        return NULL;
-    }
-
-    top5[0] = (float *)malloc(5 * sizeof(float));  // Temperatura
-    top5[1] = (float *)malloc(5 * sizeof(float));  // Presion
-    top5[2] = (float *)malloc(5 * sizeof(float));  // Humedad
-    top5[3] = (float *)malloc(5 * sizeof(float));  // Gas
-
-    if (top5[0] == NULL || top5[1] == NULL || top5[2] == NULL) {
-        // printf("Error al asignar memoria\n");
-        free(top5[0]);
-        free(top5[1]);
-        free(top5[2]);
-        free(top5[3]);
-        free(top5);
-        return NULL;
-    }
-
-    // Inicializar los arreglos
-    for (int i = 0; i < 5; i++) {
-        top5[0][i] = -FLT_MAX;
-        top5[1][i] = -FLT_MAX;
-        top5[2][i] = -FLT_MAX;
-        top5[3][i] = -FLT_MAX;
-    }
-
-    // Extraer los 5 mayores números
-    for (size_t i = 0; i < n; i++) {
-        float curr_pres = (float)reads[i].presure;
-        float curr_temp = (float)reads[i].temperature;
-        float curr_hum = (float)reads[i].humidity;
-        float curr_gas = (float)reads[i].gas_resistance;
-
-        for (int j = 0; j < 5; j++) {
-            if (curr_temp > top5[0][j]) {
-                for (int k = 4; k > j; k--) {
-                    top5[0][k] = top5[0][k - 1];
-                }
-                top5[0][j] = curr_temp;
-                break;
-            }
-        }
-
-        for (int j = 0; j < 5; j++) {
-            if (curr_pres > top5[1][j]) {
-                for (int k = 4; k > j; k--) {
-                    top5[1][k] = top5[1][k - 1];
-                }
-                top5[1][j] = curr_pres;
-                break;
-            }
-        }
-
-        for (int j = 0; j < 5; j++) {
-            if (curr_hum > top5[2][j]) {
-                for (int k = 4; k > j; k--) {
-                    top5[2][k] = top5[2][k - 1];
-                }
-                top5[2][j] = curr_hum;
-                break;
-            }
-        }
-
-        for (int j = 0; j < 5; j++) {
-            if (curr_gas > top5[3][j]) {
-                for (int k = 4; k > j; k--) {
-                    top5[3][k] = top5[3][k - 1];
-                }
-                top5[3][j] = curr_gas;
-                break;
-            }
-        }
-    }
-
-    return top5;
-}
 
 float **bmi_extraer_top_5(bmi_data reads[], size_t n) {
     // Reservar memoria para el arreglo que contendrá los 5 mayores números
@@ -240,83 +159,6 @@ float rmsValue(float arr[], float n) {
     return root;
 }
 
-void calcular_rms_y_fft(bme_data readings[], size_t n, float *rms_temp, float *rms_pres, float *rms_hum, float *rms_gas) {
-    // Crear arreglos temporales para las temperaturas, presiones, humedades y gases
-    float *temperaturas = (float *)malloc(n * sizeof(float));
-    float *presiones = (float *)malloc(n * sizeof(float));
-    float *humedades = (float *)malloc(n * sizeof(float));
-    float *gases = (float *)malloc(n * sizeof(float));
-
-    if (temperaturas == NULL || presiones == NULL || humedades == NULL) {
-        // printf("Error al asignar memoria para los cálculos RMS\n");
-        free(temperaturas);
-        free(presiones);
-        free(humedades);
-        free(gases);
-        return;
-    }
-
-    // Llenar los arreglos con los datos de temperatura y presión
-    for (size_t i = 0; i < n; i++) {
-        temperaturas[i] = readings[i].temperature;
-        presiones[i] = readings[i].presure;
-        humedades[i] = readings[i].humidity;
-        gases[i] = readings[i].gas_resistance;
-    }
-
-    // Calcular el RMS para temperatura y presión
-    *rms_temp = rmsValue(temperaturas, n);
-    *rms_pres = rmsValue(presiones, n);
-    *rms_hum = rmsValue(humedades, n);
-    *rms_gas = rmsValue(gases, n);
-
-    // Liberar memoria de los arreglos temporales
-    free(temperaturas);
-    free(presiones);
-    free(humedades);
-    free(gases);
-}
-
-/**
- * @brief Calcula las métricas de una ventana a partir de un arreglo de tuplas
- * THCP.
- *
- * @param readings Arreglo de tuplas THCP.
- * @param n Tamaño de ventana.
- * @param rms_temp Puntero a la temperatura RMS.
- * @param rms_hum Puntero a la humedad RMS.
- * @param rms_gas Puntero a la resistencia RMS.
- * @param rms_pres Puntero a la presión RMS.
- * @param temp_fft Puntero a la FFT de la temperatura.
- * @param hum_fft Puntero a la FFT de la humedad.
- * @param gas_fft Puntero a la FFT de la resistencia.
- * @param pres_fft Puntero a la FFT de la presión.
- */
-void calcula_metricas(
-    bme_data readings[], size_t n,
-    float *rms_temp, float *rms_hum, float *rms_gas, float *rms_pres,
-    WindowFFT *temp_fft, WindowFFT *hum_fft, WindowFFT *gas_fft,
-    WindowFFT *pres_fft) {
-    // Crea arreglos temporales para desempaquetar THCP.
-    float temperaturas[n];
-    float presiones[n];
-    float humedades[n];
-    float gases[n];
-    fill_THCP_arrays(temperaturas, humedades, gases, presiones, readings, n);
-
-    // Calcula el RMS para ventana de cada magnitud física.
-    *rms_temp = rmsValue(temperaturas, n);
-    *rms_pres = rmsValue(presiones, n);
-    *rms_hum = rmsValue(humedades, n);
-    *rms_gas = rmsValue(gases, n);
-
-    // Calcula FFT para la ventana de cada magnitud física.
-    calcularFFT(temperaturas, n, temp_fft->re_array, temp_fft->im_array);
-    calcularFFT(humedades, n, hum_fft->re_array, hum_fft->im_array);
-    calcularFFT(gases, n, gas_fft->re_array, gas_fft->im_array);
-    calcularFFT(presiones, n, pres_fft->re_array, pres_fft->im_array);
-}
-
 void bmi_calcula_metricas(
     bmi_data readings[], size_t n,
     float *rms_acc_x,
@@ -371,77 +213,6 @@ void bmi_calcula_metricas(
     calcularFFT(gyro_x_samples, n, gyro_x_fft->re_array, gyro_x_fft->im_array);
     calcularFFT(gyro_y_samples, n, gyro_y_fft->re_array, gyro_y_fft->im_array);
     calcularFFT(gyro_z_samples, n, gyro_z_fft->re_array, gyro_z_fft->im_array);
-}
-
-void bme_data_sender(bme_data *data, float **top5, float rms_temp, float rms_pres, float rms_hum, float rms_gas, WindowFFT *fft_temp, WindowFFT *fft_pres, WindowFFT *fft_hum, WindowFFT *fft_gas, int32_t window) {
-    // Inicializar la comunicación
-    char dataResponse1[6];
-    // printf("Beginning initialization... \n");
-    while (1) {
-        int rLen = serial_read(dataResponse1, 6);
-        if (rLen > 0) {
-            if (strcmp(dataResponse1, "BEGIN") == 0) {
-                // uart_write_bytes(UART_NUM,"OK\0",3);
-                // printf("Initialization complete\n");
-                break;
-            }
-        }
-    }
-    // printf("Begin sending... \n");
-    //  Enviar los datos
-    float data_point[4];
-    for (int i = 0; i < window; i++) {
-        data_point[0] = data[i].temperature;
-        data_point[1] = data[i].presure;
-        data_point[2] = data[i].humidity;
-        data_point[3] = data[i].gas_resistance;
-
-        // printf("Temperatura: %f\n", data_point[0]);
-        // printf("Presion: %f\n", data_point[1]);
-        // printf("Humedad: %f\n", data_point[2]);
-        // printf("Gas: %f\n", data_point[3]);
-
-        uart_write_bytes(UART_NUM, (const char *)data_point, sizeof(float) * 4);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-    vTaskDelay(pdMS_TO_TICKS(1000));
-
-    // Enviar los top 5 y el RMS
-    float data_top5[20];
-    for (int i = 0; i < 5; i++) {
-        data_top5[i] = top5[0][i];
-        data_top5[i + 5] = top5[1][i];
-        data_top5[i + 10] = top5[2][i];
-        data_top5[i + 15] = top5[3][i];
-    }
-    // Enviar de a 5 valores el top 5
-    for (int i = 0; i < 4; i++) {
-        uart_write_bytes(UART_NUM, (const char *)&data_top5[i * 5], sizeof(float) * 5);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-    vTaskDelay(pdMS_TO_TICKS(1000));
-
-    float data_rms[4];
-    data_rms[0] = rms_temp;
-    data_rms[1] = rms_pres;
-    data_rms[2] = rms_hum;
-    data_rms[3] = rms_gas;
-    uart_write_bytes(UART_NUM, (const char *)data_rms, sizeof(float) * 4);
-    vTaskDelay(pdMS_TO_TICKS(1000));
-
-    for (int i = 0; i < window; i++) {
-        float fft[8];
-        fft[0] = fft_temp->re_array[i];
-        fft[1] = fft_temp->im_array[i];
-        fft[2] = fft_pres->re_array[i];
-        fft[3] = fft_pres->im_array[i];
-        fft[4] = fft_hum->re_array[i];
-        fft[5] = fft_hum->im_array[i];
-        fft[6] = fft_gas->re_array[i];
-        fft[7] = fft_gas->im_array[i];
-        uart_write_bytes(UART_NUM, (const char *)fft, sizeof(float) * 8);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
 }
 
 void bmi_data_sender(

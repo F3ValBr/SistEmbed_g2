@@ -10,18 +10,18 @@
 #include "driver/i2c_master.h"
 #include "esp_log.h"
 #include "esp_task.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+// #include "freertos/FreeRTOS.h"
+// #include "freertos/task.h"
 #include "math.h"
 #include "sdkconfig.h"
 
 #define CONCAT_BYTES(msb, lsb) (((uint16_t)msb << 8) | (uint16_t)lsb)
 
-#define BUF_SIZE (128)       // buffer size
-#define TXD_PIN 1            // UART TX pin
-#define RXD_PIN 3            // UART RX pin
-#define UART_NUM UART_NUM_0  // UART port number
-#define BAUD_RATE 115200     // Baud rate
+// #define BUF_SIZE (128)       // buffer size
+// #define TXD_PIN 1            // UART TX pin
+// #define RXD_PIN 3            // UART RX pin
+// #define UART_NUM UART_NUM_0  // UART port number
+// #define BAUD_RATE 115200     // Baud rate
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -31,6 +31,7 @@
 #define I2C_MASTER_SDA_IO GPIO_NUM_21  // GPIO pin
 #define I2C_MASTER_FREQ_HZ 10000
 #define ESP_SLAVE_ADDR 0x68
+// #define ESP_SLAVE_ADDR 0x76
 #define WRITE_BIT 0x0
 #define READ_BIT 0x1
 #define ACK_CHECK_EN 0x0
@@ -588,10 +589,11 @@ void bmi_initialization(void) {
     printf("Inicializando ...\n");
 
     bmi_write(&reg_pwr_conf_advpowersave, &val_pwr_conf_advpowersave, 1);
-
+    printf("bmi_write de configuracion 1");
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     ret = bmi_write(&reg_init_ctrl, &val_init_ctrl, 1);
+    printf("bmi_write de configuracion 1");
 
     int config_size = sizeof(bmi270_config_file);
     // printf("Tamano config_file: %d\n\n",config_size);
@@ -606,12 +608,11 @@ void bmi_initialization(void) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     ret = bmi_write(&reg_init_ctrl, &val_init_ctrl2, 1);
-    // if(ret != ESP_OK){
-    //     printf("Error en write4: %s \n",esp_err_to_name(ret));
-    // }
-    // else {
-    //      printf("Init_ctrl = 1\n");
-    // }
+    if (ret != ESP_OK) {
+        printf("Error en write4: %s \n", esp_err_to_name(ret));
+    } else {
+        printf("Init_ctrl = 1\n");
+    }
 
     printf("\nAlgoritmo de inicializacion finalizado.\n\n");
 
@@ -773,7 +774,7 @@ bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
             acc_x = (acc_x << 8) | tmp;
 
             // printf("acc_x: %f g\n", (int16_t)acc_x * (8.000 / 32768));
-            uint16_t acc_x_tmp = (int16_t)acc_x * (8.000 / 32768);
+            float acc_x_tmp = acc_x * (8.000 / 32768);
 
             // Lectura acc_y
             ret = bmi_read(&addr_acc_y_msb, &tmp, 1);
@@ -782,7 +783,7 @@ bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
             acc_y = (acc_y << 8) | tmp;
 
             // printf("acc_y: %f g\n", (int16_t)acc_y * (8.000 / 32768));
-            uint16_t acc_y_tmp = (int16_t)acc_y * (8.000 / 32768);
+            float acc_y_tmp = acc_y * (8.000 / 32768);
 
             // Lectura acc_z
             ret = bmi_read(&addr_acc_z_msb, &tmp, 1);
@@ -791,7 +792,7 @@ bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
             acc_z = (acc_z << 8) | tmp;
 
             // printf("acc_z: %f g\n", (int16_t)acc_z * (8.000 / 32768));
-            uint16_t acc_z_tmp = (int16_t)acc_z * (8.000 / 32768);
+            float acc_z_tmp = acc_z * (8.000 / 32768);
 
             // Lectura gyr_x
             ret = bmi_read(&addr_gyr_x_msb, &tmp, 1);
@@ -800,7 +801,7 @@ bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
             gyr_x = (gyr_x << 8) | tmp;
 
             // printf("gyr_x: %f dps\n", (int16_t)gyr_x * (2000.000 / 32768));
-            uint16_t gyr_x_tmp = (int16_t)gyr_x * (2000.000 / 32768);
+            float gyr_x_tmp = gyr_x * (2000.000 / 32768);
 
             // Lectura gyr_y
             ret = bmi_read(&addr_gyr_y_msb, &tmp, 1);
@@ -809,7 +810,7 @@ bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
             gyr_y = (gyr_y << 8) | tmp;
 
             // printf("gyr_y: %f dps\n", (int16_t)gyr_y * (2000.000 / 32768));
-            uint16_t gyr_y_tmp = (int16_t)gyr_y * (2000.000 / 32768);
+            float gyr_y_tmp = gyr_y * (2000.000 / 32768);
 
             // Lectura gyr_z
             ret = bmi_read(&addr_gyr_z_msb, &tmp, 1);
@@ -818,7 +819,7 @@ bmi_data *bmi_read_data(int window_s, size_t *n_reads) {
             gyr_z = (gyr_z << 8) | tmp;
 
             // printf("gyr_z: %f dps\n\n", (int16_t)gyr_z * (2000.000 / 32768));
-            uint16_t gyr_z_tmp = (int16_t)gyr_z * (2000.000 / 32768);
+            float gyr_z_tmp = gyr_z * (2000.000 / 32768);
 
             if (ret != ESP_OK) {
                 printf("Error lectura: %s \n", esp_err_to_name(ret));

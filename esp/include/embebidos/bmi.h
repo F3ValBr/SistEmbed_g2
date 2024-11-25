@@ -12,6 +12,8 @@ typedef struct bmi_data {
 } bmi_data;
 
 bmi_data *bmi_read_data(int window_s, size_t *n_reads);
+esp_err_t bmi_read(uint8_t *data_address, uint8_t *data_rd, size_t size);
+esp_err_t bmi_write(uint8_t *data_address, uint8_t *data_wr, size_t size);
 esp_err_t bmi_init(void);
 void bmi_softreset(void);
 void bmi_get_chipid(void);
