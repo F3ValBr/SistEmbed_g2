@@ -9,6 +9,8 @@ numpy = "*"
 matplotlib = "*"
 python-dotenv = "*"
 pyqt5 = {version = "*", sys_platform = "== 'linux'"}
+pyqt5-tools = "*"
+pyqtgraph = "*"
 
 [dev-packages]
 pytest = "*"

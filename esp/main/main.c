@@ -160,19 +160,18 @@ float rmsValue(float arr[], float n) {
 }
 
 void bmi_calcula_metricas(bmi_data readings[], size_t n,
-                            float *rms_acc_x,
-                            float *rms_acc_y,
-                            float *rms_acc_z,
-                            float *rms_gyro_x,
-                            float *rms_gyro_y,
-                            float *rms_gyro_z,
-                            WindowFFT *acc_x_fft,
-                            WindowFFT *acc_y_fft,
-                            WindowFFT *acc_z_fft,
-                            WindowFFT *gyro_x_fft,
-                            WindowFFT *gyro_y_fft,
-                            WindowFFT *gyro_z_fft) {
-
+                          float *rms_acc_x,
+                          float *rms_acc_y,
+                          float *rms_acc_z,
+                          float *rms_gyro_x,
+                          float *rms_gyro_y,
+                          float *rms_gyro_z,
+                          WindowFFT *acc_x_fft,
+                          WindowFFT *acc_y_fft,
+                          WindowFFT *acc_z_fft,
+                          WindowFFT *gyro_x_fft,
+                          WindowFFT *gyro_y_fft,
+                          WindowFFT *gyro_z_fft) {
     // Crea arreglos temporales para desempaquetar gyro y accelerometro.
     float acc_x_samples[n];
     float acc_y_samples[n];
@@ -180,7 +179,7 @@ void bmi_calcula_metricas(bmi_data readings[], size_t n,
     float gyro_x_samples[n];
     float gyro_y_samples[n];
     float gyro_z_samples[n];
-    
+
     fill_bmi_arrays(
         acc_x_samples, acc_y_samples, acc_z_samples,
         gyro_x_samples, gyro_y_samples, gyro_z_samples,
@@ -403,6 +402,7 @@ void app_main(void) {
         uint32_t signal_body;
         memcpy(&signal_body, &signal_buffer[1], sizeof(uint32_t));
 
+        uart_flush(UART_NUM);
         // command_handler(signal_type, *signal_body);
         command_handler(signal_type, signal_body);
         vTaskDelay(pdMS_TO_TICKS(1000));

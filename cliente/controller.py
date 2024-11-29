@@ -306,7 +306,8 @@ class Controller:
 
         # TODO: verificar limites de valores
         axs[0, 0].plot(data_acc_x)
-        axs[0, 0].set_title(f"Coord x - Acelerómetro (RMS = {self.acc_x_rms})")
+        axs[0, 0].set_title(
+            f"Coord x - Acelerómetro \n(RMS = {self.acc_x_rms})")
         axs[0, 0].set_ylabel("x")
         # axs[0, 0].set_ylim(0, 50)
 
@@ -314,7 +315,8 @@ class Controller:
             axs[0, 0].plot(value[0], value[1], "ro")
 
         axs[0, 1].plot(data_acc_y)
-        axs[0, 1].set_title(f"Coord y - Acelerómetro (RMS = {self.acc_y_rms})")
+        axs[0, 1].set_title(
+            f"Coord y - Acelerómetro \n(RMS = {self.acc_y_rms})")
         axs[0, 1].set_ylabel("y")
         # axs[0, 1].set_ylim(1000, 1500)
 
@@ -322,7 +324,8 @@ class Controller:
             axs[0, 1].plot(value[0], value[1], "ro")
 
         axs[0, 2].plot(data_acc_z)
-        axs[0, 2].set_title(f"Coord z - Acelerómetro (RMS = {self.acc_z_rms})")
+        axs[0, 2].set_title(
+            f"Coord z - Acelerómetro \n(RMS = {self.acc_z_rms})")
         axs[0, 2].set_ylabel("z")
         # axs[0, 2].set_ylim(0, 100)
 
@@ -330,7 +333,8 @@ class Controller:
             axs[0, 2].plot(value[0], value[1], "ro")
 
         axs[0, 3].plot(data_gyro_x)
-        axs[0, 3].set_title(f"Coord x - Giroscópio (RMS = {self.gyro_x_rms})")
+        axs[0, 3].set_title(
+            f"Coord x - Giroscópio \n(RMS = {self.gyro_x_rms})")
         axs[0, 3].set_ylabel("x")
         # axs[0, 3].set_ylim(0, 100)
 
@@ -338,7 +342,8 @@ class Controller:
             axs[0, 3].plot(value[0], value[1], "ro")
 
         axs[0, 4].plot(data_gyro_y)
-        axs[0, 4].set_title(f"Coord y - Giroscópio (RMS = {self.gyro_y_rms})")
+        axs[0, 4].set_title(
+            f"Coord y - Giroscópio \n(RMS = {self.gyro_y_rms})")
         axs[0, 4].set_ylabel("y")
         # axs[0, 3].set_ylim(0, 100)
 
@@ -346,7 +351,8 @@ class Controller:
             axs[0, 4].plot(value[0], value[1], "ro")
 
         axs[0, 5].plot(data_gyro_z)
-        axs[0, 5].set_title(f"Coord z - Giroscópio (RMS = {self.gyro_z_rms})")
+        axs[0, 5].set_title(
+            f"Coord z - Giroscópio \n(RMS = {self.gyro_z_rms})")
         axs[0, 5].set_ylabel("x")
         # axs[0, 3].set_ylim(0, 100)
 
